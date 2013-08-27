@@ -1,4 +1,4 @@
-# Separation.js is a mini browser-based framework for templating local files with external datasources.
+# Separation.js is a mini browser-based framework for templating local files with external data sources.
 
 ## Usage
 

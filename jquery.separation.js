@@ -3,11 +3,11 @@
         $(config).each(function (offset, partial) {
             if (partial.jsonUrl === 'undefined' || partial.templateName === 'undefined' || partial.selector === 'undefined') {
                 if (console) {
-                    console.log('Skipped partial due to missing parameter, check jsonUrl, or templateName, or selector');
+                    console.log('Skipped partial due to missing parameter, check jsonUrl, template, or selector. Offset: ' + offset);
                     return;
                 }
             }
-            $.getJSON(partial.jsonUrl, partial.args).done(function (data) {
+            $.getJSON(partial.jsonUrl, partial.jsonArgs).done(function (data) {
                 $.ajax({
                     url: partial.template,
                     success: function (src) {

@@ -17,17 +17,17 @@ Basic usage:
 $(function() {
 	$().separation([
 		{
-			'jsonUrl': "http://api.flickr.com/services/feeds/photos_public.gne?jsoncallback=?",
-			'args': {tags: "mount rainier", tagmode: "any", format: "json"},
-			'template': './flickr.hbs',
-			'selector': '#images'
+			"jsonUrl": "http://api.flickr.com/services/feeds/photos_public.gne?jsoncallback=?",
+			"jsonArgs": {"tags": "mount rainier", "tagmode": "any", "format": "json"},
+			"template": "./flickr.hbs",
+			"selector": "#images"
 		}
 	]);
 });
 </script>
 ```
 
-Things get interesting when you use the same Javascript config file and handlebar templates to generate the HTML on the server side with PHP.
+See the `example.html` file for a more accurate depiction.  Things get interesting when you use the same Javascript config file and handlebar templates to generate the HTML on the server side with PHP.
 
 PHP example:
 
@@ -40,7 +40,7 @@ Separation::html('example.html')->template()->write();
 ### How it works
 Separation.js is driven by a config file.  Generally, if you have an HTML template called `example.html`, it would have a accompanying separation config file named `example-sep.js`.  Both the Javascript and PHP versions of the system are able to read this file and operate on it.
 
-Separation.js is very simple.  For each item in the config, it will attempt to read the data via XHR or JSONP.  Arguments can be passed to the remote server.  A handlebar template for a "partial" must be specified, and a CSS selector for where to render the final markup into within the original template.
+Separation.js is very simple.  For each item in the config, it will attempt to read the data via XHR or JSONP.  Arguments can be passed to the remote server.  A handlebar template for a partial must be specified, and a CSS selector for where to render the final markup into within the original template.
 
 ### Important
 

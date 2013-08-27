@@ -6,7 +6,7 @@ This component relies on [Handlebars.js](http://handlebarsjs.com/) and [jQuery](
 
 Basic usage:
 
-```
+```html
 <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
 <script src="http://cdnjs.cloudflare.com/ajax/libs/handlebars.js/1.0.0/handlebars.min.js"></script>
 <script src="./jquery.separation.js"></script>
@@ -29,7 +29,7 @@ Things get interesting when you can use the same javascript config file and hand
 
 PHP example:
 
-```
+```php
 <?php
 require_once('Separation.php');
 Separation::html('example.html')->template()->write();

@@ -1,0 +1,1 @@
+# Separation.js is a mini browser-based framework for rendering arrays of json data sources with handlebar to specific css selectors

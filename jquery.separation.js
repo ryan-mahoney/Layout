@@ -1,8 +1,6 @@
 (function ($) {
     $.fn.separation = function (config) {
-        console.log(config);
         $(config).each(function (offset, partial) {
-            "use strict";
             if (partial.jsonUrl === 'undefined' || partial.templateName === 'undefined' || partial.selector === 'undefined') {
                 if (console) {
                     console.log('Skipped partial due to missing parameter, check jsonUrl, or templateName, or selector');

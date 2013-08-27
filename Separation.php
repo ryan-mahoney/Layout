@@ -26,6 +26,10 @@ class Separation {
 		$this->handlebars = new Handlebars_Engine;
 	}
 
+	public static function html ($path) {
+		return new Separation($path);
+	}
+
 	public function dump () {
 		echo 
 			$this->htmlFile, "\n", 
@@ -33,7 +37,7 @@ class Separation {
 		print_r ($this->config);	
 	}
 
-	public function render () {
+	public function template () {
 		foreach ($this->config as $partial) {
 			$template = file_get_contents($partial['template']);
 			$dataUrl = str_replace('?jsoncallback=?', '', $partial['jsonUrl']) . '?' . http_build_query($partial['jsonArgs']);
@@ -41,16 +45,14 @@ class Separation {
 			if (!in_array(substr($data, 0, 1), ['{', ']'])) {
 				$data = substr($data, (strpos($data, '(') + 1), -1);
 			}
-			echo $data;
-			return;
+			$data = str_replace("\\'", "'", $data);
 			$data = json_decode($data, true);
-			print_r($data);
-			return;
-			echo $this->handlebars->render($template, $data);
+			$this->html = str_replace('<script type="text/separation" selector="' . $partial['selector'] . '"></script>', $this->handlebars->render($template, $data), $this->html);
 		}
+		return $this;
+	}
+
+	public function write() {
+		echo $this->html;
 	}
 }
-
-$separation = new Separation('example.html');
-//$separation->dump();
-$separation->render();

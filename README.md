@@ -51,3 +51,7 @@ If you are also using the PHP version, you will need to put the following script
 ```
 
 This script tag will never be interpreted.  it is always replaced by either the PHP or Javascript logic.  The important thing is that the selector attribute should match the selector specified in the config file.
+
+### Motivation
+
+Despite the popularity of MVC frameworks and other software infrastructure intended to cause separations in code between business rules, display logic and data, often times these things inevitable get mixed in together.  Not in this case.  This software forces you to have JSON APIs available for all data and templates (one in each file) that each render on area of zone of a page.

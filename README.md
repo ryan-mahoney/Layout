@@ -24,3 +24,13 @@ $(function() {
 });
 </script>
 ```
+
+Things get interesting when you can use the same javascript config file and handlebar templates to generate the HTML on the server side.
+
+PHP example:
+
+```
+<?php
+require_once('Separation.php');
+Separation::html('example.html')->template()->write();
+```

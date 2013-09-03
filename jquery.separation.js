@@ -68,6 +68,7 @@
         Sep.push(entity);
 
         if (this.attributes.hbs !== undefined) {
+            console.log(entity.attributes.hbs);
             $.ajax({
                 url: entity.attributes.hbs,
                 success: function (src) {
@@ -75,6 +76,10 @@
                     if (entity.attributes.url !== undefined) {
                         entity.fetch();
                     }
+                },
+                'error': function (qXHR, textStatus, errorThrown) {
+                    console.log(qXHR);
+                    console.log(textStatus);
                 },
                 dataType: 'text'
             });

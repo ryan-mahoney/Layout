@@ -106,7 +106,6 @@
     });
 
     $.fn.separation = function (config) {
-        console.log('hello');
         $(config).each(function (offset, partial) {
             if (partial.url === undefined || partial.hbs === undefined || partial.selector === undefined) {
                 if (console) {

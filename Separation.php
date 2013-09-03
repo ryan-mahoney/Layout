@@ -21,7 +21,7 @@ class Separation {
 		}
 		$this->htmlFile = $path;
 		$this->html = file_get_contents($path);
-		$this->configFile = str_replace('.html', '-sep.js', $path);
+		$this->configFile = self::$config['sep'] . str_replace('.html', '.js', basename($path));
 		if (!file_exists($this->configFile)) {
 			return;
 		}

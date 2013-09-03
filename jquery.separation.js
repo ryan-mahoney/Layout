@@ -16,36 +16,41 @@
         this.fetch = function () {
             var url = entity.attributes.url;
             var args = entity.attributes.args;
-            if (entity.attributes.type !== undefined && entity.attributes.type == 'Collection') {
-                var protocol = url.split('//', 2)[0];
-                if (protocol == '' || protocol === undefined) {
-                    protocol = window.location.protocol;
-                }
-                var tmp = url.split('?');
-                url = tmp[0];
-                var qs = '';
-                if (tmp.length > 1) {
-                    for (var i=1; i < tmp.length; i++) {
-                        qs += '?' + tmp[i];
+            if (entity.attributes.type !== undefined) {
+                if (entity.attributes.type == 'Collection') {
+                    var protocol = url.split('//', 2)[0];
+                    if (protocol == '' || protocol === undefined) {
+                        protocol = window.location.protocol;
                     }
-                } else {
-                    qs = '?callback=?';
-                }
-                var pieces = url.replace(/.*?:\/\//g, "").split('/');
-                url = '';
-                $.each(['domain', 'path', 'collection', 'method', 'limit', 'skip', 'sort'], function (offset, key) {
-                    if (entity.attributes.args[key] !== undefined) {
-                        url += entity.attributes.args[key]
-                    } else if (pieces[offset] !== undefined) {
-                        url += pieces[offset];
+                    var tmp = url.split('?');
+                    url = tmp[0];
+                    var qs = '';
+                    if (tmp.length > 1) {
+                        for (var i=1; i < tmp.length; i++) {
+                            qs += '?' + tmp[i];
+                        }
                     } else {
-                        return false;
+                        qs = '?callback=?&Sep-local';
                     }
-                    url += '/';
-                });
-                url = protocol + '//' + url;
-                url = url.substr(0, (url.length - 1)) + qs;
-                console.log(url);
+                    var pieces = url.replace(/.*?:\/\//g, "").split('/');
+                    url = '';
+                    $.each(['domain', 'path', 'collection', 'method', 'limit', 'skip', 'sort'], function (offset, key) {
+                        if (entity.attributes.args[key] !== undefined) {
+                            url += entity.attributes.args[key]
+                        } else if (pieces[offset] !== undefined) {
+                            url += pieces[offset];
+                        } else {
+                            return false;
+                        }
+                        url += '/';
+                    });
+                    url = protocol + '//' + url;
+                    url = url.substr(0, (url.length - 1)) + qs;
+                } else if (entity.attributes.type == 'Document' && entity.attributes.args['id'] !== undefined) {
+                    url += '/byId/' + entity.attributes.args['id'] + '?callback=?';
+                } else {
+                    return;
+                }
             }
             $.getJSON(url, args).done(function (data) {
                 entity.data = data;
@@ -67,8 +72,7 @@
 
         Sep.push(entity);
 
-        if (this.attributes.hbs !== undefined) {
-            console.log(entity.attributes.hbs);
+        if (entity.attributes.hbs !== undefined) {
             $.ajax({
                 url: entity.attributes.hbs,
                 success: function (src) {
@@ -78,6 +82,7 @@
                     }
                 },
                 'error': function (qXHR, textStatus, errorThrown) {
+                    console.log(entity.attributes.hbs);
                     console.log(qXHR);
                     console.log(textStatus);
                 },
@@ -99,7 +104,7 @@
         if (obj.Sep === undefined) {
             return;
         }
-        location.href = decodeURIComponent(location.href).replace(location.hash, "") + '#';
+        //location.href = decodeURIComponent(location.href).replace(location.hash, "") + '#';
         var entity = Sep.get(obj.Sep);
         if (entity === undefined) {
             return;
@@ -109,6 +114,7 @@
         }
         entity.fetch();
     });
+    window.onload = function() { $(window).hashchange(); };
 
     $.fn.separation = function (config) {
         $(config).each(function (offset, partial) {

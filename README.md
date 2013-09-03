@@ -44,6 +44,15 @@ Separation.js is very simple.  For each item in the configuration, it attempts t
 
 ### Important
 
+When you work locally, you will need to do the following:
+
+``Firefox``
+In the address bar type in "about:config"
+Set the "Security.fileuri.strict_origin_policy" to false
+
+``Chrome``
+Load chrome with the "--allow-file-access-from-files" command line flag set
+
 If you are using the PHP version, you will need to put the following script-like tag inside of each targetted container.  This script tag will never be executed, it is used by the PHP script as a place-holder that will be replaced upon execution.  The important aspect of using this tag, is that the `selector` attribute should match the selector specified in the config file.  Here is an example of the markup with the script tag:
 
 ```html

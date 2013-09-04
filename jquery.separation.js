@@ -18,7 +18,7 @@
             var args = entity.attributes.args;
             if (entity.attributes.type !== undefined) {
                 if (entity.attributes.type == 'Collection') {
-                    var protocol = url.split('//', 2)[0];
+                    var protocol = url.split('://', 2)[0];
                     if (protocol == '' || protocol === undefined) {
                         protocol = window.location.protocol;
                     }
@@ -36,7 +36,7 @@
                     url = '';
                     $.each(['domain', 'path', 'collection', 'method', 'limit', 'skip', 'sort'], function (offset, key) {
                         if (entity.attributes.args[key] !== undefined) {
-                            url += entity.attributes.args[key]
+                            url += entity.attributes.args[key];
                         } else if (pieces[offset] !== undefined) {
                             url += pieces[offset];
                         } else {
@@ -44,10 +44,10 @@
                         }
                         url += '/';
                     });
-                    url = protocol + '//' + url;
+                    url = protocol + '://' + url;
                     url = url.substr(0, (url.length - 1)) + qs;
                 } else if (entity.attributes.type == 'Document' && entity.attributes.args['id'] !== undefined) {
-                    url += '/byId/' + entity.attributes.args['id'] + '?callback=?';
+                    url = url.replace('/bySlug/:slug', '/byId/' + entity.attributes.args['id']) + '?callback=?';
                 } else {
                     return;
                 }

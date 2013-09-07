@@ -1,11 +1,5 @@
 {
     "name": "virtuecenter/separation",
-    "repositories": [
-        {
-            "type": "vcs",
-            "url": "https://github.com/virtuecenter/handlebars.php"
-        }
-    ],
     "require": {
         "xamin/handlebars.php": "dev-master"
     }

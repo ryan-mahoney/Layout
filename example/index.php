@@ -1,1 +1,0 @@
-/home/webuser/webroots/separationMVC/index.php

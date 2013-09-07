@@ -5,7 +5,7 @@ $(function() {
 			"url": "http://collections.localhost/json/blogs/bySlug/:slug",
 			"args": {},
 			"hbs": "../templates/blog.hbs",
-			"selector": "#content",
+			"selector": "content",
 			"type": "Document"
 		}
 	]);

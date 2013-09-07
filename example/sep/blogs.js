@@ -5,7 +5,7 @@ $(function() {
 			"url": "http://collections.localhost/json/blogs/all/10/0/{\"display_date\":-1}",
 			"args": {},
 			"hbs": "../templates/blogs.hbs",
-			"selector": "#content",
+			"selector": "content",
 			"type": "Collection"
 		}
 	]);

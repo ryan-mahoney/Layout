@@ -57,7 +57,10 @@
                 if (entity.attributes.selector === undefined) {
                     return;
                 }
-                $(entity.attributes.selector).html(entity.template(data));
+                if (entity.container == undefined) {
+                    entity.container = $('*:contains("{{{' + entity.attributes.selector + '}}}"):last');
+                }
+                $(entity.container).html(entity.template(data));
             });
         };
 

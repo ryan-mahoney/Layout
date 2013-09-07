@@ -114,7 +114,9 @@ class Separation {
 			}
 			$data = str_replace("\\'", "'", $data);
 			$data = json_decode($data, true);
-			$this->html = str_replace('<script type="text/x-separation" selector="' . $entity['selector'] . '"></script>', $this->handlebars->render($template, $data), $this->html);
+			$this->html = str_replace('{{{' . $entity['selector'] . '}}}', $this->handlebars->render($template, $data), $this->html);
+			//serverize scripts, css and images
+			$this->html = str_replace(['<link href="../css/', '<script src="../sep/', '<script src="../js/', '<img src="../images/', ''], ['<link href="/css/', '<script src="/sep/', '<script src="/js/', '<img src="/images/"'], $this->html);
 		}
 		return $this;
 	}

@@ -1,7 +1,4 @@
 <?php
-require __DIR__ . '/Handlebars/Autoloader.php';
-Handlebars_Autoloader::register();
-
 class Separation {
 	private $htmlFile;
 	private $html;

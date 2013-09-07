@@ -17,8 +17,6 @@
         "xamin/handlebars.php": "dev-master"
     },
     "autoload": {
-        "psr-0": {
-            "Separation": "src"
-        }
+        "classmap": ["src/"]
     }
 }

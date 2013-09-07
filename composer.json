@@ -1,6 +1,24 @@
 {
     "name": "virtuecenter/separation",
+    "type": "library",
+    "description": "Microframework for PHP/JS handlebar templating",
+    "keywords": ["handlebars", "templating"],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Ryan Mahoney",
+            "email": "ryan@virtuecenter.com",
+            "homepage": "http://www.virtuecenter.com",
+            "role": "Developer"
+        }
+    ],
     "require": {
+    	"php": ">=5.4.0",
         "xamin/handlebars.php": "dev-master"
+    },
+    "autoload": {
+        "psr-0": {
+            "Separation": "src"
+        }
     }
 }

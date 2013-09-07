@@ -1,9 +1,3 @@
 {
-    "name": "separation",
-    "repositories": [
-        {
-            "type": "vcs",
-            "url": "https://github.com/virtuecenter/separation"
-        }
-    ]
+    "name": "separation"
 }

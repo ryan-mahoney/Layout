@@ -98,7 +98,7 @@ class Separation {
 				$hbs = explode('/', $hbs);
 				$hbs = array_pop($hbs);
 			}
-			$template = file_get_contents(self::$config['templates'] . $hbs);
+			$template = file_get_contents(self::$config['partials'] . $hbs);
 			$dataUrl = $entity['url'] . '?' . http_build_query($entity['args']);
 			if ($entity['type'] == 'Collection') {
 				$dataUrl = self::collectionUrl($entity);

@@ -93,12 +93,7 @@ class Separation {
 
 	public function template () {
 		foreach ($this->entities as $entity) {
-			$hbs = $entity['hbs'];
-			if (substr_count($hbs, '/') > 0) {
-				$hbs = explode('/', $hbs);
-				$hbs = array_pop($hbs);
-			}
-			$template = file_get_contents(self::$config['partials'] . $hbs);
+			$template = file_get_contents(self::$config['partials'] . $entity['hbs']);
 			$dataUrl = $entity['url'] . '?' . http_build_query($entity['args']);
 			if ($entity['type'] == 'Collection') {
 				$dataUrl = self::collectionUrl($entity);

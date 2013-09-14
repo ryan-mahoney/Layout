@@ -1,4 +1,10 @@
 (function ($) {
+    var SepDepth = 0;
+    if (window.location.protocol == 'file:') {
+        SepDepth = 1;
+    } else {
+        SepDepth = (window.location.pathname.match(/\//g)||[]).length - 1;
+    }
     var Sep = {
         "Entities": {},
         "push": function (Entity) {
@@ -49,7 +55,7 @@
                 } else if (entity.attributes.type == 'Document' && entity.attributes.args['id'] !== undefined) {
                     url = url.replace('/bySlug/:slug', '/byId/' + entity.attributes.args['id']) + '?callback=?';
                 } else {
-                    return;
+                    url += '?callback=?';
                 }
             }
             $.getJSON(url, args).done(function (data) {
@@ -76,8 +82,9 @@
         Sep.push(entity);
 
         if (entity.attributes.hbs !== undefined) {
+            var base = repeat('../', SepDepth) + 'partials/';
             $.ajax({
-                url: entity.attributes.hbs,
+                url: base + entity.attributes.hbs,
                 success: function (src) {
                     entity.template = Handlebars.compile(src);
                     if (entity.attributes.url !== undefined) {
@@ -91,6 +98,16 @@
                 },
                 dataType: 'text'
             });
+        }
+
+        function repeat(pattern, count) {
+            if (count < 1) return '';
+            var result = '';
+            while (count > 0) {
+                if (count & 1) result += pattern;
+                count >>= 1, pattern += pattern;
+            }
+            return result;
         }
     };
 
@@ -120,14 +137,26 @@
     window.onload = function() { $(window).hashchange(); };
 
     $.fn.separation = function (config) {
-        $(config).each(function (offset, partial) {
-            if (partial.url === undefined || partial.hbs === undefined || partial.selector === undefined) {
-                if (console) {
-                    console.log('Skipped partial due to missing parameter, check url, hbs, or selector. Offset: ' + offset);
-                    return;
+        if (window.location.protocol == 'file:') {
+            $(config).each(function (offset, partial) {
+                if (partial.url === undefined || partial.hbs === undefined || partial.selector === undefined) {
+                    if (console) {
+                        console.log('Skipped partial due to missing parameter, check url, hbs, or selector. Offset: ' + offset);
+                        return;
+                    }
+                }
+                new Sep.Entity(partial);
+            });
+        }
+        $('form[data-xhr="true"]').ajaxForm({
+            type: 'post',
+            dataType: 'json',
+            success: function (response, status, xhr, form) {
+                var idFieldName = response['marker'] + '[id]';
+                if (response['id'] && form.find('input[name="' + idFieldName + '"]').length == 0) {
+                    form.append('<input type="hidden" name="' + idFieldName + '" value="' + response['id'] + '" />');
                 }
             }
-            new Sep.Entity(partial);
         });
     };
 }(jQuery));

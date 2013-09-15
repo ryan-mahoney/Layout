@@ -60,11 +60,11 @@
             }
             $.getJSON(url, args).done(function (data) {
                 entity.data = data;
-                if (entity.attributes.selector === undefined) {
+                if (entity.attributes.target === undefined) {
                     return;
                 }
                 if (entity.container == undefined) {
-                    entity.container = $('*:contains("{{{' + entity.attributes.selector + '}}}"):last');
+                    entity.container = $('*:contains("{{{' + entity.attributes.target + '}}}"):last');
                 }
                 $(entity.container).html(entity.template(data));
             });
@@ -139,9 +139,9 @@
     $.fn.separation = function (config) {
         if (window.location.protocol == 'file:') {
             $(config).each(function (offset, partial) {
-                if (partial.url === undefined || partial.hbs === undefined || partial.selector === undefined) {
+                if (partial.url === undefined || partial.hbs === undefined || partial.target === undefined) {
                     if (console) {
-                        console.log('Skipped partial due to missing parameter, check url, hbs, or selector. Offset: ' + offset);
+                        console.log('Skipped partial due to missing parameter, check url, hbs, or target. Offset: ' + offset);
                         return;
                     }
                 }

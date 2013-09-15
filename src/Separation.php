@@ -13,13 +13,12 @@ class Separation {
 	}
 
 	public function __construct($path) {
-		$path = self::$config['layouts'] . $path;
-		if (!file_exists($path)) {
-			throw new Exception('Can not load html file: ' . $path);
+		$this->htmlFile = self::$config['layouts'] . $path . '.html';
+		if (!file_exists($this->htmlFile)) {
+			throw new Exception('Can not load html file: ' . $this->htmlFile);
 		}
-		$this->htmlFile = $path;
-		$this->html = file_get_contents($path);
-		$this->configFile = self::$config['sep'] . str_replace('.html', '.js', basename($path));
+		$this->html = file_get_contents($this->htmlFile);
+		$this->configFile = self::$config['sep'] . $path . '.js';
 		if (!file_exists($this->configFile)) {
 			return;
 		}
@@ -108,7 +107,7 @@ class Separation {
 			$data = json_decode($data, true);
 			$this->html = str_replace('{{{' . $entity['target'] . '}}}', $this->handlebars->render($template, $data), $this->html);
 			//serverize scripts, css and images
-			$this->html = str_replace(['<link href="../css/', '<script src="../sep/', '<script src="../js/', '<img src="../images/', ''], ['<link href="/css/', '<script src="/sep/', '<script src="/js/', '<img src="/images/"'], $this->html);
+			$this->html = str_replace(['<link href="../css/', '<script src="../sep/', '<script src="../js/', '<img src="../images/', 'require.js" data-main="../sep/'], ['<link href="/css/', '<script src="/sep/', '<script src="/js/', '<img src="/images/"', 'require.js" data-main="/sep/'], $this->html);
 		}
 		return $this;
 	}

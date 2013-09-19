@@ -40,7 +40,7 @@
                     }
                     var pieces = url.replace(/.*?:\/\//g, "").split('/');
                     url = '';
-                    $.each(['domain', 'path', 'collection', 'method', 'limit', 'skip', 'sort'], function (offset, key) {
+                    $.each(['domain', 'path', 'collection', 'method', 'limit', 'page', 'sort'], function (offset, key) {
                         if (entity.attributes.args[key] !== undefined) {
                             url += entity.attributes.args[key];
                         } else if (pieces[offset] !== undefined) {
@@ -161,7 +161,7 @@
     };
 
     
-    //helpers
+    //helpers for pagination
     Handlebars.registerHelper('paginate', function(pagination, options) {
       var type = options.hash.type || 'middle';
       var ret = '';
@@ -223,8 +223,13 @@
 
       return ret;
     });
-
-
-
+    
+    $('body').on('click', '.sep-page', function () {
+        var page = $(this).attr('data-page');
+        var sep = $(this).attr('data-sep');
+        var hash = '{"Sep":"' + sep + '", "a": {"page":' + page + '}}';
+        window.location.hash = hash;
+        $(this).attr('href', '#' + hash);
+    });
 
 }(jQuery));

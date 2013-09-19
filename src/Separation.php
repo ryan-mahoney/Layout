@@ -107,7 +107,24 @@ class Separation {
 			$data = json_decode($data, true);
 			$this->html = str_replace('{{{' . $entity['target'] . '}}}', $this->handlebars->render($template, $data), $this->html);
 			//serverize scripts, css and images
-			$this->html = str_replace(['<link href="../css/', '<script src="../sep/', '<script src="../js/', '<img src="../images/', 'require.js" data-main="../sep/'], ['<link href="/css/', '<script src="/sep/', '<script src="/js/', '<img src="/images/"', 'require.js" data-main="/sep/'], $this->html);
+			$this->html = str_replace(
+				[
+					'<link href="../css/', 
+					'<script src="../sep/', 
+					'<script src="../js/', 
+					'<img src="../images/', 
+					'require.js" data-main="../sep/',
+					'<link href="../bootstrap/',
+					'<script src="../bootstrap/'
+				], [
+					'<link href="/css/', 
+					'<script src="/sep/', 
+					'<script src="/js/', 
+					'<img src="/images/"', 
+					'require.js" data-main="/sep/',
+					'<link href="/bootstrap/',
+					'<script src="/bootstrap/'
+				], $this->html);
 		}
 		return $this;
 	}

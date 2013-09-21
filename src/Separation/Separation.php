@@ -1,5 +1,6 @@
 <?php
 namespace Separation;
+use Handlebars\Handlebars;
 
 class Separation {
 	private $htmlFile;
@@ -32,7 +33,7 @@ class Separation {
 			$this->entities[$offset] = new \ArrayObject($entity);
 			$this->entitiesHash[$entity['id']] = $this->entities[$offset];
 		}
-		$this->handlebars = new \Handlebars_Engine();
+		$this->handlebars = new Handlebars();
 		$this->handlebars->addHelper('paginate', 
 			function ($template, $context, $args, $source) {
 				$pagination = $context->get('pagination');

@@ -1,4 +1,6 @@
 <?php
+namespace Separation;
+
 class Separation {
 	private $htmlFile;
 	private $html;
@@ -15,7 +17,7 @@ class Separation {
 	public function __construct($path) {
 		$this->htmlFile = self::$config['layouts'] . $path . '.html';
 		if (!file_exists($this->htmlFile)) {
-			throw new Exception('Can not load html file: ' . $this->htmlFile);
+			throw new \Exception('Can not load html file: ' . $this->htmlFile);
 		}
 		$this->html = file_get_contents($this->htmlFile);
 		$this->configFile = self::$config['sep'] . $path . '.js';
@@ -27,10 +29,95 @@ class Separation {
 		$this->entities = substr($this->entities, 0, (strrpos($this->entities, ']') + 1));
 		$this->entities = json_decode($this->entities, true);
 		foreach ($this->entities as $offset => $entity) {
-			$this->entities[$offset] = new ArrayObject($entity);
+			$this->entities[$offset] = new \ArrayObject($entity);
 			$this->entitiesHash[$entity['id']] = $this->entities[$offset];
 		}
-		$this->handlebars = new Handlebars_Engine();
+		$this->handlebars = new \HandlebarsEngine();
+		$this->handlebars->addHelper('paginate', ['Separation', 'paginate']);
+	}
+
+	public static function paginate ($template, $context, $args, $source) {
+		$pagination = $context->get('pagination');
+		$options = [];
+		foreach (explode(' ', $args) as $arg) {
+			if (substr_count($arg, '=') == 0) {
+				continue;
+			}
+			$parts = explode('=', $arg);
+			$options[$parts[0]] = trim($parts[1], '"');				
+		}
+		//print_r($pagination);
+		//print_r($options);
+
+
+		$type = 'middle';
+		if (isset($options['type'])) {
+			$type = $options['type'];
+		}
+      	$ret = '';
+    	$pageCount = $pagination['pageCount'];
+    	$page = intval($pagination['page']);
+      	$limit;
+      	if (isset($options['limit'])) {
+      		$limit = $options['limit'];
+      	}
+
+      //page pageCount
+      $newContext = [];
+      switch ($type) {
+        case 'middle':
+        	if (is_numeric($limit)) {
+	            $i = 0;
+	            $leftCount = ceil($limit / 2) - 1;
+	            $rightCount = $limit - $leftCount - 1;
+	            if ($page + $rightCount > $pageCount) {
+	            	$leftCount = $limit - ($pageCount - $page) - 1;
+	            }
+	            if ($page - $leftCount < 1) {
+	            	$leftCount = $page - 1;
+	            	$start = $page - $leftCount;
+			        while ($i < $limit && $i < $pageCount) {
+				        $newContext = ['n' => $start];
+				        if ($start === $page) {
+				        	$newContext['active'] = true;
+				        	$ret .= $template->render($newContext);
+				        }
+				        $start++;
+				        $i++;
+			        }
+			    }
+            } else {
+            	for ($i = 1; $i <= $pageCount; $i++) {
+              		$newContext['n'] = $i;
+              		if ($i === $page) {
+              			$newContext['active'] = true;
+              		}
+              		$ret .= $template->render($newContext);
+            	}
+          	}
+          	break;
+        
+        case 'previous':
+         	if ($page === 1) {
+            	$newContext = ['disabled' => true, 'n' => 1 ];
+          	} else {
+            	$newContext = ['n' =>  $page - 1];
+          	}
+          	$ret .= $template->render($newContext);
+          	break;
+        
+        case 'next':
+        	$newContext = [];
+        	if ($page === $pageCount) {
+            	$newContext = ['disabled' => true, 'n' => $pageCount];
+          	} else {
+            	$newContext = ['n' =>  $page + 1];
+          	}
+          	$ret .= $template->render($newContext);
+          	break;
+      	}
+
+    	return $ret;
 	}
 
 	public static function layout ($path) {

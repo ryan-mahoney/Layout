@@ -1,6 +1,7 @@
 <?php
 namespace Separation;
 use Handlebars\Handlebars;
+use Cache\Cache;
 
 class Separation {
 	private $htmlFile;
@@ -94,6 +95,7 @@ class Separation {
 	}
 
 	public function template () {
+		$context = [];
 		foreach ($this->entities as $entity) {
 			$template = file_get_contents(self::$config['partials'] . $entity['hbs']);
 			$dataUrl = $entity['url'] . '?' . http_build_query($entity['args']);
@@ -102,33 +104,40 @@ class Separation {
 			} elseif ($entity['type'] == 'Document') {
 				$dataUrl = self::documentUrl($entity);
 			}
-			$data = trim(file_get_contents($dataUrl));
+			if (isset($entity['cache'])) {
+				$data = Cache::getSetGet('sep-data-' . $dataUrl, function () use ($dataUrl) {
+					return trim(file_get_contents($dataUrl));
+				}, $entity['cache']);
+			} else {
+				$data = trim(file_get_contents($dataUrl));
+			}
 			if (!in_array(substr($data, 0, 1), ['{', ']'])) {
 				$data = substr($data, (strpos($data, '(') + 1), -1);
 			}
-			$data = str_replace("\\'", "'", $data);
+			//$data = str_replace("\\'", "'", $data);
 			$data = json_decode($data, true);
-			$this->html = str_replace('{{{' . $entity['target'] . '}}}', $this->handlebars->render($template, $data), $this->html);
-			//serverize scripts, css and images
-			$this->html = str_replace(
-				[
-					'<link href="../css/', 
-					'<script src="../sep/', 
-					'<script src="../js/', 
-					'<img src="../images/', 
-					'require.js" data-main="../sep/',
-					'<link href="../bootstrap/',
-					'<script src="../bootstrap/'
-				], [
-					'<link href="/css/', 
-					'<script src="/sep/', 
-					'<script src="/js/', 
-					'<img src="/images/"', 
-					'require.js" data-main="/sep/',
-					'<link href="/bootstrap/',
-					'<script src="/bootstrap/'
-				], $this->html);
+			$context[$entity['target']] = $this->handlebars->render($template, $data);
 		}
+		$this->html = $this->handlebars->render($this->html, $context);
+		//serverize scripts, css and images
+		$this->html = str_replace([
+				'<link href="../css/', 
+				'<script src="../sep/', 
+				'<script src="../js/', 
+				'<img src="../images/', 
+				'require.js" data-main="../sep/',
+				'<link href="../bootstrap/',
+				'<script src="../bootstrap/'
+			], [
+				'<link href="/css/', 
+				'<script src="/sep/', 
+				'<script src="/js/', 
+				'<img src="/images/"', 
+				'require.js" data-main="/sep/',
+				'<link href="/bootstrap/',
+				'<script src="/bootstrap/'
+			], $this->html
+		);
 		return $this;
 	}
 

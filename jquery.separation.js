@@ -12,10 +12,18 @@
         },
         "get": function (id) {
             return Sep.Entities[id];
+        },
+        "render": function () {
+            var context = {};
+            $.each(Sep.Entities, function (key, partial) {
+                context[partial.attributes.id] = partial.markup;
+            });
+            layoutTemplate = Handlebars.compile($('body').html());
+            $('body').html(layoutTemplate(context));
         }
     };
 
-    var Entity = Sep.Entity = function (attributes) {
+    var Entity = Sep.Entity = function (attributes, last) {
         this.attributes = attributes || {};
         var entity = this;
 
@@ -60,13 +68,10 @@
             }
             $.getJSON(url, args).done(function (data) {
                 entity.data = data;
-                if (entity.attributes.target === undefined) {
-                    return;
+                entity.markup = entity.template(data);
+                if (last) {
+                    Sep.render();
                 }
-                if (entity.container == undefined) {
-                    entity.container = $('*:contains("{{{' + entity.attributes.target + '}}}"):last');
-                }
-                $(entity.container).html(entity.template(data));
             });
         };
 
@@ -139,27 +144,32 @@
     $.fn.separation = function (config) {
         if (window.location.protocol == 'file:') {
             $(config).each(function (offset, partial) {
-                if (partial.url === undefined || partial.hbs === undefined || partial.target === undefined) {
+                var last = false;
+                if (offset + 1 == config.length) {
+                    last = true;
+                }
+                if (partial.url === undefined || partial.hbs === undefined || partial.id === undefined) {
                     if (console) {
-                        console.log('Skipped partial due to missing parameter, check url, hbs, or target. Offset: ' + offset);
+                        console.log('Skipped partial due to missing parameter, check url, hbs, or id. Offset: ' + offset);
                         return;
                     }
                 }
-                new Sep.Entity(partial);
+                new Sep.Entity(partial, last);
             });
         }
-        $('form[data-xhr="true"]').ajaxForm({
-            type: 'post',
-            dataType: 'json',
-            success: function (response, status, xhr, form) {
-                var idFieldName = response['marker'] + '[id]';
-                if (response['id'] && form.find('input[name="' + idFieldName + '"]').length == 0) {
-                    form.append('<input type="hidden" name="' + idFieldName + '" value="' + response['id'] + '" />');
-                }
-            }
-        });
     };
     
+    $('form[data-xhr="true"]').ajaxForm({
+        type: 'post',
+        dataType: 'json',
+        success: function (response, status, xhr, form) {
+            var idFieldName = response['marker'] + '[id]';
+            if (response['id'] && form.find('input[name="' + idFieldName + '"]').length == 0) {
+                form.append('<input type="hidden" name="' + idFieldName + '" value="' + response['id'] + '" />');
+            }
+        }
+    });
+
     $('body').on('click', '.sep-page', function () {
         var page = $(this).attr('data-page');
         var sep = $(this).attr('data-sep');

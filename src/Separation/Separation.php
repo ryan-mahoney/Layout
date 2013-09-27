@@ -116,7 +116,7 @@ class Separation {
 			}
 			//$data = str_replace("\\'", "'", $data);
 			$data = json_decode($data, true);
-			$context[$entity['target']] = $this->handlebars->render($template, $data);
+			$context[$entity['id']] = $this->handlebars->render($template, $data);
 		}
 		$this->html = $this->handlebars->render($this->html, $context);
 		//serverize scripts, css and images

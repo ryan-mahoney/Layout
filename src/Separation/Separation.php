@@ -22,14 +22,11 @@ class Separation {
 			throw new \Exception('Can not load html file: ' . $this->htmlFile);
 		}
 		$this->html = file_get_contents($this->htmlFile);
-		$this->configFile = self::$config['sep'] . $path . '.js';
+		$this->configFile = self::$config['app'] . $path . '.json';
 		if (!file_exists($this->configFile)) {
 			return;
 		}
-		$this->entities = file_get_contents($this->configFile);
-		$this->entities = explode('$().separation(', $this->entities, 2)[1];
-		$this->entities = substr($this->entities, 0, (strrpos($this->entities, ']') + 1));
-		$this->entities = json_decode($this->entities, true);
+		$this->entities = json_decode(file_get_contents($this->configFile), true);
 		foreach ($this->entities as $offset => $entity) {
 			$this->entities[$offset] = new \ArrayObject($entity);
 			$this->entitiesHash[$entity['id']] = $this->entities[$offset];
@@ -97,7 +94,11 @@ class Separation {
 	public function template () {
 		$context = [];
 		foreach ($this->entities as $entity) {
-			$template = file_get_contents(self::$config['partials'] . $entity['hbs']);
+			if (substr($entity['hbs'], -4) == '.hbs') {
+				$template = file_get_contents(self::$config['partials'] . $entity['hbs']);
+			} else {
+				$template = $entity['hbs'];
+			}
 			$dataUrl = $entity['url'] . '?' . http_build_query($entity['args']);
 			if ($entity['type'] == 'Collection') {
 				$dataUrl = self::collectionUrl($entity);

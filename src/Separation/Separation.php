@@ -123,11 +123,16 @@ class Separation {
 			} else {
 				$data = trim(file_get_contents($dataUrl));
 			}
-			if (!in_array(substr($data, 0, 1), ['{', ']'])) {
-				$data = substr($data, (strpos($data, '(') + 1), -1);
+			$type = 'json';
+			if (isset($entity['type'])) {
+				$type = $entity['type'];
 			}
-			//$data = str_replace("\\'", "'", $data);
-			$data = json_decode($data, true);
+			if (in_array($type, ['json', 'Collection', 'Document'])) {
+				if (!in_array(substr($data, 0, 1), ['{', ']'])) {
+					$data = substr($data, (strpos($data, '(') + 1), -1);
+				}
+				$data = json_decode($data, true);
+			}
 			if ($template === false) {
 				$context[$entity['id']] = $data;
 			} else {

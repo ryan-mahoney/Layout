@@ -94,16 +94,27 @@ class Separation {
 	public function template () {
 		$context = [];
 		foreach ($this->entities as $entity) {
-			if (substr($entity['hbs'], -4) == '.hbs') {
+			if (!isset($entity['hbs']) || empty($entity['hbs'])) {
+				$template = false;
+			} elseif (substr($entity['hbs'], -4) == '.hbs') {
 				$template = file_get_contents(self::$config['partials'] . $entity['hbs']);
 			} else {
 				$template = $entity['hbs'];
 			}
-			$dataUrl = $entity['url'] . '?' . http_build_query($entity['args']);
-			if ($entity['type'] == 'Collection') {
-				$dataUrl = self::collectionUrl($entity);
-			} elseif ($entity['type'] == 'Document') {
-				$dataUrl = self::documentUrl($entity);
+			$dataUrl = $entity['url'];
+			if (is_array($entity['args']) && count($entity['args']) > 0) {
+				$delimiter = '?';
+				if (substr_count($dataUrl, '?') > 0) {
+					$delimiter = '&';
+				}
+				$dataUrl .= $delimiter . http_build_query($entity['args']);
+			}
+			if (isset($entity['type'])) {
+				if ($entity['type'] == 'Collection') {
+					$dataUrl = self::collectionUrl($entity);
+				} elseif ($entity['type'] == 'Document') {
+					$dataUrl = self::documentUrl($entity);
+				}
 			}
 			if (isset($entity['cache'])) {
 				$data = Cache::getSetGet('sep-data-' . $dataUrl, function () use ($dataUrl) {
@@ -117,7 +128,11 @@ class Separation {
 			}
 			//$data = str_replace("\\'", "'", $data);
 			$data = json_decode($data, true);
-			$context[$entity['id']] = $this->handlebars->render($template, $data);
+			if ($template === false) {
+				$context[$entity['id']] = $data;
+			} else {
+				$context[$entity['id']] = $this->handlebars->render($template, $data);
+			}
 		}
 		$this->html = $this->handlebars->render($this->html, $context);
 		//serverize scripts, css and images

@@ -102,7 +102,7 @@ class Separation {
 				$template = $entity['hbs'];
 			}
 			$dataUrl = $entity['url'];
-			if (is_array($entity['args']) && count($entity['args']) > 0) {
+			if (isset($entity['args']) && is_array($entity['args']) && count($entity['args']) > 0) {
 				$delimiter = '?';
 				if (substr_count($dataUrl, '?') > 0) {
 					$delimiter = '&';

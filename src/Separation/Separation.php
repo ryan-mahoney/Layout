@@ -77,7 +77,7 @@ class Separation {
             }
             $url .= '/';
         }
-        $url = $protocol . '://' . substr($url, 0, -1);
+        $url = $protocol . '://' . $url;
         return substr($url, 0, -1) . $qs;
 	}
 

@@ -40,9 +40,9 @@ class Separation {
 
 	public function set ($data) {
 		foreach ($data as $partial) {
-			$entity = $this->entitiesHash[$partial['Sep']];
-			if (isset($partial['a'])) {
-				$entity['args'] = array_merge($entity['args'], $partial['a']);
+			$entity = $this->entitiesHash[$partial['id']];
+			if (isset($partial['args'])) {
+				$entity['args'] = array_merge($entity['args'], $partial['args']);
 			}			
 		}
 		return $this;
@@ -67,7 +67,7 @@ class Separation {
 	    }
 	    $pieces = explode('/', preg_replace('/.*?:\/\//', '', $url));
         $url = '';
-        foreach (['domain', 'path', 'collection', 'method', 'limit', 'skip', 'sort'] as $offset => $key) {
+        foreach (['domain', 'path', 'collection', 'method', 'limit', 'page', 'sort'] as $offset => $key) {
         	if (isset($entity['args'][$key])) {
             	$url .= $entity['args'][$key];
             } else if (isset($pieces[$offset])) {
@@ -77,7 +77,7 @@ class Separation {
             }
             $url .= '/';
         }
-        $url = $protocol . '://' . $url;
+        $url = $protocol . '://' . substr($url, 0, -1);
         return substr($url, 0, -1) . $qs;
 	}
 

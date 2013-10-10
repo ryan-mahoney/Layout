@@ -114,8 +114,6 @@ class Separation {
 					$dataUrl = self::collectionUrl($entity);
 				} elseif ($entity['type'] == 'Document') {
 					$dataUrl = self::documentUrl($entity);
-					echo $dataUrl;
-					exit;
 				}
 			}
 			if (isset($entity['cache'])) {

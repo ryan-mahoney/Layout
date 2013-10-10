@@ -11,6 +11,7 @@ class Separation {
 	private $entitiesHash = [];
 	private $handlebars;
 	private static $config = [];
+	private static $dataCache = [];
 
 	public static function config ($config) {
 		self::$config = $config;
@@ -42,7 +43,11 @@ class Separation {
 		foreach ($data as $partial) {
 			$entity = $this->entitiesHash[$partial['id']];
 			if (isset($partial['args'])) {
-				$entity['args'] = array_merge($entity['args'], $partial['args']);
+				if (isset($entity['args'])) {
+					$entity['args'] = array_merge($entity['args'], $partial['args']);
+				} else {
+					$entity['args'] = $partial['args'];
+				}
 			}			
 		}
 		return $this;
@@ -116,12 +121,19 @@ class Separation {
 					$dataUrl = self::documentUrl($entity);
 				}
 			}
-			if (isset($entity['cache'])) {
-				$data = Cache::getSetGet('sep-data-' . $dataUrl, function () use ($dataUrl) {
-					return trim(file_get_contents($dataUrl));
-				}, $entity['cache']);
+			if (substr($entity['url'], 0, 1) == '@') {
+				$data = self::$dataCache[substr($entity['url'], 1)];
 			} else {
-				$data = trim(file_get_contents($dataUrl));
+				if (!isset(self::$dataCache[$entity['id']])) {
+					if (isset($entity['cache'])) {
+						$data = Cache::getSetGet('sep-data-' . $dataUrl, function () use ($dataUrl) {
+							return trim(file_get_contents($dataUrl));
+						}, $entity['cache']);
+					} else {
+						$data = trim(file_get_contents($dataUrl));
+					}
+					self::$dataCache[$entity['id']] = $data;
+				}
 			}
 			$type = 'json';
 			if (isset($entity['type'])) {
@@ -140,25 +152,6 @@ class Separation {
 			}
 		}
 		$this->html = $this->handlebars->render($this->html, $context);
-		//serverize scripts, css and images
-		$this->html = str_replace([
-				'<link href="../css/', 
-				'<script src="../sep/', 
-				'<script src="../js/', 
-				'<img src="../images/', 
-				'require.js" data-main="../sep/',
-				'<link href="../bootstrap/',
-				'<script src="../bootstrap/'
-			], [
-				'<link href="/css/', 
-				'<script src="/sep/', 
-				'<script src="/js/', 
-				'<img src="/images/"', 
-				'require.js" data-main="/sep/',
-				'<link href="/bootstrap/',
-				'<script src="/bootstrap/'
-			], $this->html
-		);
 		return $this;
 	}
 

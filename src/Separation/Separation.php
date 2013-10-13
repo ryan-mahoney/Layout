@@ -1,7 +1,5 @@
 <?php
 namespace Separation;
-use Handlebars\Handlebars;
-use Cache\Cache;
 
 class Separation {
 	private $htmlFile;
@@ -9,21 +7,24 @@ class Separation {
 	private $configFile;
 	private $entities = [];
 	private $entitiesHash = [];
-	private $handlebars;
-	private static $config = [];
+	private $engine;
+	private $root;
+	private $cache;
 	private static $dataCache = [];
 
-	public static function config ($config) {
-		self::$config = $config;
+	public function __construct($root, $engine, $cache) {
+		$this->root = $root;
+		$this->engine = $engine;
+		$this->cache = $cache;
 	}
 
-	public function __construct($path) {
-		$this->htmlFile = self::$config['layouts'] . $path . '.html';
+	public function layout ($path) {
+		$this->htmlFile = $this->root . '/layouts/' . $path . '.html';
 		if (!file_exists($this->htmlFile)) {
 			throw new \Exception('Can not load html file: ' . $this->htmlFile);
 		}
 		$this->html = file_get_contents($this->htmlFile);
-		$this->configFile = self::$config['app'] . $path . '.json';
+		$this->configFile = $this->root . '/app/' . $path . '.json';
 		if (!file_exists($this->configFile)) {
 			return;
 		}
@@ -32,11 +33,7 @@ class Separation {
 			$this->entities[$offset] = new \ArrayObject($entity);
 			$this->entitiesHash[$entity['id']] = $this->entities[$offset];
 		}
-		$this->handlebars = Handlebars::factory();
-	}
-
-	public static function layout ($path) {
-		return new Separation($path);
+		return $this;
 	}
 
 	public function set ($data) {
@@ -102,7 +99,7 @@ class Separation {
 			if (!isset($entity['hbs']) || empty($entity['hbs'])) {
 				$template = false;
 			} elseif (substr($entity['hbs'], -4) == '.hbs') {
-				$template = file_get_contents(self::$config['partials'] . $entity['hbs']);
+				$template = file_get_contents($this->root . '/partials/' . $entity['hbs']);
 			} else {
 				$template = $entity['hbs'];
 			}
@@ -126,7 +123,7 @@ class Separation {
 			} else {
 				if (!isset(self::$dataCache[$entity['id']])) {
 					if (isset($entity['cache'])) {
-						$data = Cache::getSetGet('sep-data-' . $dataUrl, function () use ($dataUrl) {
+						$data = $this->cache->getSetGet('sep-data-' . $dataUrl, function () use ($dataUrl) {
 							return trim(file_get_contents($dataUrl));
 						}, $entity['cache']);
 					} else {
@@ -148,10 +145,10 @@ class Separation {
 			if ($template === false) {
 				$context[$entity['id']] = $data;
 			} else {
-				$context[$entity['id']] = $this->handlebars->render($template, $data);
+				$context[$entity['id']] = $this->engine->render($template, $data);
 			}
 		}
-		$this->html = $this->handlebars->render($this->html, $context);
+		$this->html = $this->engine->render($this->html, $context);
 		return $this;
 	}
 

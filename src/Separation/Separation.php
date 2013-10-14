@@ -5,8 +5,8 @@ class Separation {
 	private $htmlFile;
 	private $html;
 	private $configFile;
-	private $entities = [];
-	private $entitiesHash = [];
+	private $bindings = [];
+	private $bindingsHash = [];
 	private $engine;
 	private $root;
 	private $cache;
@@ -24,34 +24,41 @@ class Separation {
 			throw new \Exception('Can not load html file: ' . $this->htmlFile);
 		}
 		$this->html = file_get_contents($this->htmlFile);
-		$this->configFile = $this->root . '/app/' . $path . '.json';
+		$this->configFile = $this->root . '/app/' . $path . '.yml';
 		if (!file_exists($this->configFile)) {
 			return;
 		}
-		$this->entities = json_decode(file_get_contents($this->configFile), true);
-		foreach ($this->entities as $offset => $entity) {
-			$this->entities[$offset] = new \ArrayObject($entity);
-			$this->entitiesHash[$entity['id']] = $this->entities[$offset];
+		//$this->bindings = json_decode(file_get_contents($this->configFile), true);
+		$separation = yaml_parse_file($this->configFile);
+		if ($separation == false) {
+			throw new \Exception('Can not parse YAML file: ' . $this->configFile);
+		}
+		$offset = 0;
+		foreach ($separation['binding'] as $id => $binding) {
+			$this->bindings[$offset] = new \ArrayObject($binding);
+			$this->bindings[$offset]['id'] = $id;
+			$this->bindingsHash[$id] = $this->bindings[$offset];
+			$offset++;
 		}
 		return $this;
 	}
 
 	public function set ($data) {
 		foreach ($data as $partial) {
-			$entity = $this->entitiesHash[$partial['id']];
+			$binding = $this->bindingsHash[$partial['id']];
 			if (isset($partial['args'])) {
-				if (isset($entity['args'])) {
-					$entity['args'] = array_merge($entity['args'], $partial['args']);
+				if (isset($binding['args'])) {
+					$binding['args'] = array_merge($binding['args'], $partial['args']);
 				} else {
-					$entity['args'] = $partial['args'];
+					$binding['args'] = $partial['args'];
 				}
 			}			
 		}
 		return $this;
 	}
 
-	private static function collectionUrl (&$entity) {
-		$url = $entity['url'];
+	private static function collectionUrl (&$binding) {
+		$url = $binding['url'];
 		$protocol = explode('://', $url)[0];
         if (empty($protocol)) {
             $protocol = 'http';
@@ -70,8 +77,8 @@ class Separation {
 	    $pieces = explode('/', preg_replace('/.*?:\/\//', '', $url));
         $url = '';
         foreach (['domain', 'path', 'collection', 'method', 'limit', 'page', 'sort'] as $offset => $key) {
-        	if (isset($entity['args'][$key])) {
-            	$url .= $entity['args'][$key];
+        	if (isset($binding['args'][$key])) {
+            	$url .= $binding['args'][$key];
             } else if (isset($pieces[$offset])) {
 				$url .= $pieces[$offset];
             } else {
@@ -83,58 +90,58 @@ class Separation {
         return substr($url, 0, -1) . $qs;
 	}
 
-	private static function documentUrl (&$entity) {
-		$url = $entity['url'];
-		if (isset($entity['args']['slug'])) {
-			return str_replace(':slug', $entity['args']['slug'], $url);
+	private static function documentUrl (&$binding) {
+		$url = $binding['url'];
+		if (isset($binding['args']['slug'])) {
+			return str_replace(':slug', $binding['args']['slug'], $url);
 		}
-		if (isset($entity['args']['id'])) {
-			return str_replace('/bySlug/:slug', '/byId/' . $entity['args']['id'], $url);
+		if (isset($binding['args']['id'])) {
+			return str_replace('/bySlug/:slug', '/byId/' . $binding['args']['id'], $url);
 		}
 	}
 
 	public function template () {
 		$context = [];
-		foreach ($this->entities as $entity) {
-			if (!isset($entity['hbs']) || empty($entity['hbs'])) {
+		foreach ($this->bindings as $binding) {
+			if (!isset($binding['partial']) || empty($binding['partial'])) {
 				$template = false;
-			} elseif (substr($entity['hbs'], -4) == '.hbs') {
-				$template = file_get_contents($this->root . '/partials/' . $entity['hbs']);
+			} elseif (substr($binding['partial'], -4) == '.hbs') {
+				$template = file_get_contents($this->root . '/partials/' . $binding['partial']);
 			} else {
-				$template = $entity['hbs'];
+				$template = $binding['partial'];
 			}
-			$dataUrl = $entity['url'];
-			if (isset($entity['args']) && is_array($entity['args']) && count($entity['args']) > 0) {
+			$dataUrl = $binding['url'];
+			if (isset($binding['args']) && is_array($binding['args']) && count($binding['args']) > 0) {
 				$delimiter = '?';
 				if (substr_count($dataUrl, '?') > 0) {
 					$delimiter = '&';
 				}
-				$dataUrl .= $delimiter . http_build_query($entity['args']);
+				$dataUrl .= $delimiter . http_build_query($binding['args']);
 			}
-			if (isset($entity['type'])) {
-				if ($entity['type'] == 'Collection') {
-					$dataUrl = self::collectionUrl($entity);
-				} elseif ($entity['type'] == 'Document') {
-					$dataUrl = self::documentUrl($entity);
+			if (isset($binding['type'])) {
+				if ($binding['type'] == 'Collection') {
+					$dataUrl = self::collectionUrl($binding);
+				} elseif ($binding['type'] == 'Document') {
+					$dataUrl = self::documentUrl($binding);
 				}
 			}
-			if (substr($entity['url'], 0, 1) == '@') {
-				$data = self::$dataCache[substr($entity['url'], 1)];
+			if (substr($binding['url'], 0, 1) == '@') {
+				$data = self::$dataCache[substr($binding['url'], 1)];
 			} else {
-				if (!isset(self::$dataCache[$entity['id']])) {
-					if (isset($entity['cache'])) {
+				if (!isset(self::$dataCache[$binding['id']])) {
+					if (isset($binding['cache'])) {
 						$data = $this->cache->getSetGet('sep-data-' . $dataUrl, function () use ($dataUrl) {
 							return trim(file_get_contents($dataUrl));
-						}, $entity['cache']);
+						}, $binding['cache']);
 					} else {
 						$data = trim(file_get_contents($dataUrl));
 					}
-					self::$dataCache[$entity['id']] = $data;
+					self::$dataCache[$binding['id']] = $data;
 				}
 			}
 			$type = 'json';
-			if (isset($entity['type'])) {
-				$type = $entity['type'];
+			if (isset($binding['type'])) {
+				$type = $binding['type'];
 			}
 			if (in_array($type, ['json', 'Collection', 'Document'])) {
 				if (!in_array(substr($data, 0, 1), ['{', ']'])) {
@@ -143,9 +150,9 @@ class Separation {
 				$data = json_decode($data, true);
 			}
 			if ($template === false) {
-				$context[$entity['id']] = $data;
+				$context[$binding['id']] = $data;
 			} else {
-				$context[$entity['id']] = $this->engine->render($template, $data);
+				$context[$binding['id']] = $this->engine->render($template, $data);
 			}
 		}
 		$this->html = $this->engine->render($this->html, $context);

@@ -143,7 +143,7 @@ class Separation {
 			if (isset($binding['type'])) {
 				$type = $binding['type'];
 			}
-			if (in_array($type, ['json', 'Collection', 'Document'])) {
+			if (in_array($type, ['json', 'Collection', 'Document', 'Form'])) {
 				if (!in_array(substr($data, 0, 1), ['{', ']'])) {
 					$data = substr($data, (strpos($data, '(') + 1), -1);
 				}
@@ -159,7 +159,11 @@ class Separation {
 		return $this;
 	}
 
-	public function write() {
-		echo $this->html;
+	public function write(&$reference=false) {
+		if ($reference === false) {
+			echo $this->html;
+		} else {
+			$reference = $this->html;
+		}
 	}
 }

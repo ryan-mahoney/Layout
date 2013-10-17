@@ -11,11 +11,17 @@ class Separation {
 	private $root;
 	private $cache;
 	private static $dataCache = [];
+	private $app = false;
 
 	public function __construct($root, $engine, $cache) {
 		$this->root = $root;
 		$this->engine = $engine;
 		$this->cache = $cache;
+	}
+
+	public function app ($app) {
+		$this->app = $app;
+		return $this;
 	}
 
 	public function layout ($path) {
@@ -24,11 +30,10 @@ class Separation {
 			throw new \Exception('Can not load html file: ' . $this->htmlFile);
 		}
 		$this->html = file_get_contents($this->htmlFile);
-		$this->configFile = $this->root . '/app/' . $path . '.yml';
+		$this->configFile = $this->root . '/../app/' . (($this->app !== false) ? $this->app : $path) . '.yml';
 		if (!file_exists($this->configFile)) {
 			return;
 		}
-		//$this->bindings = json_decode(file_get_contents($this->configFile), true);
 		$separation = yaml_parse_file($this->configFile);
 		if ($separation == false) {
 			throw new \Exception('Can not parse YAML file: ' . $this->configFile);

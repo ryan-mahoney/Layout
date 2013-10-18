@@ -10,13 +10,17 @@ class Separation {
 	private $engine;
 	private $root;
 	private $cache;
-	private static $dataCache = [];
+	private $dataCache = [];
 	private $app = false;
+	private $dataAPI = false;
 
-	public function __construct($root, $engine, $cache) {
+	public function __construct($root, $engine, $cache, $config) {
 		$this->root = $root;
 		$this->engine = $engine;
 		$this->cache = $cache;
+		if (isset($config->db['dataAPI'])) {
+			$this->dataAPI = $config->db['dataAPI'];
+		}
 	}
 
 	public function app ($app) {
@@ -42,6 +46,11 @@ class Separation {
 		foreach ($separation['binding'] as $id => $binding) {
 			$this->bindings[$offset] = new \ArrayObject($binding);
 			$this->bindings[$offset]['id'] = $id;
+			if ($this->dataAPI != false && isset($this->bindings[$offset]['url'])) {
+				if (substr_count($this->bindings[$offset]['url'], '%dataAPI%')) {
+					$this->bindings[$offset]['url'] = str_replace('%dataAPI%', $this->dataAPI, $this->bindings[$offset]['url']);
+				}
+			}
 			$this->bindingsHash[$id] = $this->bindings[$offset];
 			$offset++;
 		}
@@ -131,9 +140,9 @@ class Separation {
 				}
 			}
 			if (substr($binding['url'], 0, 1) == '@') {
-				$data = self::$dataCache[substr($binding['url'], 1)];
+				$data = $this->dataCache[substr($binding['url'], 1)];
 			} else {
-				if (!isset(self::$dataCache[$binding['id']])) {
+				if (!isset($this->dataCache[$binding['id']])) {
 					if (isset($binding['cache'])) {
 						$data = $this->cache->getSetGet('sep-data-' . $dataUrl, function () use ($dataUrl) {
 							return trim(file_get_contents($dataUrl));
@@ -141,7 +150,7 @@ class Separation {
 					} else {
 						$data = trim(file_get_contents($dataUrl));
 					}
-					self::$dataCache[$binding['id']] = $data;
+					$this->dataCache[$binding['id']] = $data;
 				}
 			}
 			$type = 'json';

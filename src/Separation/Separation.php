@@ -21,6 +21,7 @@ class Separation {
 		if (isset($config->db['dataAPI'])) {
 			$this->dataAPI = $config->db['dataAPI'];
 		}
+		$this->dataAPI;
 	}
 
 	public function showBindings () {
@@ -70,8 +71,7 @@ class Separation {
 		return $this;
 	}
 
-	private static function collectionUrl (&$binding) {
-		$url = $binding['url'];
+	private static function collectionUrl (&$binding, $url) {
 		$protocol = explode('://', $url)[0];
         if (empty($protocol)) {
             $protocol = 'http';
@@ -103,8 +103,7 @@ class Separation {
         return substr($url, 0, -1) . $qs;
 	}
 
-	private static function documentUrl (&$binding) {
-		$url = $binding['url'];
+	private static function documentUrl (&$binding, $url) {
 		if (isset($binding['args']['slug'])) {
 			return str_replace(':slug', $binding['args']['slug'], $url);
 		}
@@ -124,8 +123,8 @@ class Separation {
 				$template = $binding['partial'];
 			}
 			$dataUrl = $binding['url'];
-			if ($this->dataAPI != false && !empty($dataUrl)) {
-				if (substr_count($dataUrl, '%dataAPI%')) {
+			if ($this->dataAPI !== false && !empty($dataUrl)) {
+				if (substr_count($dataUrl, '%dataAPI%') > 0) {
 					$dataUrl = str_replace('%dataAPI%', $this->dataAPI, $dataUrl);
 				}
 			}
@@ -138,13 +137,13 @@ class Separation {
 			}
 			if (isset($binding['type'])) {
 				if ($binding['type'] == 'Collection') {
-					$dataUrl = self::collectionUrl($binding);
+					$dataUrl = self::collectionUrl($binding, $dataUrl);
 				} elseif ($binding['type'] == 'Document') {
-					$dataUrl = self::documentUrl($binding);
+					$dataUrl = self::documentUrl($binding, $dataUrl);
 				}
 			}
-			if (substr($binding['url'], 0, 1) == '@') {
-				$data = $this->dataCache[substr($binding['url'], 1)];
+			if (substr($dataUrl, 0, 1) == '@') {
+				$data = $this->dataCache[substr($dataUrl, 1)];
 			} else {
 				if (!isset($this->dataCache[$binding['id']])) {
 					if (isset($binding['cache'])) {

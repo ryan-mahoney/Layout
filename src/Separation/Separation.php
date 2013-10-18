@@ -48,6 +48,10 @@ class Separation {
 			throw new \Exception('Can not parse YAML file: ' . $this->configFile);
 		}
 		$offset = 0;
+		if (!is_array($separation['binding']) || empty($separation['binding'])) {
+			$this->bindings = [];
+			return;
+		}
 		foreach ($separation['binding'] as $id => $binding) {
 			$this->bindings[$offset] = new \ArrayObject($binding);
 			$this->bindings[$offset]['id'] = $id;

@@ -23,6 +23,10 @@ class Separation {
 		}
 	}
 
+	public function showBindings () {
+		return print_r($this->bindings, true);
+	}
+
 	public function app ($app) {
 		$this->app = $app;
 		return $this;
@@ -46,11 +50,6 @@ class Separation {
 		foreach ($separation['binding'] as $id => $binding) {
 			$this->bindings[$offset] = new \ArrayObject($binding);
 			$this->bindings[$offset]['id'] = $id;
-			if ($this->dataAPI != false && isset($this->bindings[$offset]['url'])) {
-				if (substr_count($this->bindings[$offset]['url'], '%dataAPI%')) {
-					$this->bindings[$offset]['url'] = str_replace('%dataAPI%', $this->dataAPI, $this->bindings[$offset]['url']);
-				}
-			}
 			$this->bindingsHash[$id] = $this->bindings[$offset];
 			$offset++;
 		}
@@ -125,6 +124,11 @@ class Separation {
 				$template = $binding['partial'];
 			}
 			$dataUrl = $binding['url'];
+			if ($this->dataAPI != false && !empty($dataUrl)) {
+				if (substr_count($dataUrl, '%dataAPI%')) {
+					$dataUrl = str_replace('%dataAPI%', $this->dataAPI, $dataUrl);
+				}
+			}
 			if (isset($binding['args']) && is_array($binding['args']) && count($binding['args']) > 0) {
 				$delimiter = '?';
 				if (substr_count($dataUrl, '?') > 0) {

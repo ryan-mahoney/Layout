@@ -50,7 +50,7 @@ class Separation {
 		$offset = 0;
 		if (!is_array($separation['binding']) || empty($separation['binding'])) {
 			$this->bindings = [];
-			return;
+			return $this;
 		}
 		foreach ($separation['binding'] as $id => $binding) {
 			$this->bindings[$offset] = new \ArrayObject($binding);

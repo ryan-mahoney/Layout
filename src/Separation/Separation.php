@@ -61,17 +61,25 @@ class Separation {
 		return $this;
 	}
 
-	public function set ($data) {
-		foreach ($data as $partial) {
-			$binding = $this->bindingsHash[$partial['id']];
-			if (isset($partial['args'])) {
-				if (isset($binding['args'])) {
-					$binding['args'] = array_merge($binding['args'], $partial['args']);
-				} else {
-					$binding['args'] = $partial['args'];
-				}
-			}			
-		}
+	public function url ($id, $url) {
+		$this->bindingsHash[$id]['url'] = $url;
+		return $this;
+	}
+
+	public function args ($id, $args) {
+		$this->bindingsHash[$id]['args'] = $args;
+		return $this;
+	}
+
+	public function partial ($id, $partial) {
+		$this->bindingsHash['partial'] = $partial;
+		return $this;
+	}
+
+	public function data ($id, $data, $type='array') {
+		$url = $this->bindingsHash[$id]['url'];
+		$this->dataCache[$url] = $data;
+		$this->bindingsHash[$id]['type'] = $type;
 		return $this;
 	}
 
@@ -158,6 +166,8 @@ class Separation {
 						$data = trim(file_get_contents($dataUrl));
 					}
 					$this->dataCache[$binding['id']] = $data;
+				} else {
+					$data = $this->dataCache[$binding['id']];
 				}
 			}
 			$type = 'json';

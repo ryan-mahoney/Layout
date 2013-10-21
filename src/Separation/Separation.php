@@ -13,11 +13,13 @@ class Separation {
 	private $dataCache = [];
 	private $app = false;
 	private $dataAPI = false;
+	private $yamlSlow;
 
-	public function __construct($root, $engine, $cache, $config) {
+	public function __construct($root, $engine, $cache, $config, $yamlSlow) {
 		$this->root = $root;
 		$this->engine = $engine;
 		$this->cache = $cache;
+		$this->yamlSlow = $yamlSlow;
 		if (isset($config->db['dataAPI'])) {
 			$this->dataAPI = $config->db['dataAPI'];
 		}
@@ -43,7 +45,11 @@ class Separation {
 		if (!file_exists($this->configFile)) {
 			return;
 		}
-		$separation = yaml_parse_file($this->configFile);
+		if (function_exists('yaml_parse_file')) {
+			$separation = yaml_parse_file($this->configFile);
+		} else {
+			$separation = $this->yamlSlow->parse($this->configFile);
+		}
 		if ($separation == false) {
 			throw new \Exception('Can not parse YAML file: ' . $this->configFile);
 		}

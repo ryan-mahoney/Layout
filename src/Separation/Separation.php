@@ -22,6 +22,9 @@ class Separation {
 		$this->yamlSlow = $yamlSlow;
 		if (isset($config->db['dataAPI'])) {
 			$this->dataAPI = $config->db['dataAPI'];
+			if ($this->dataAPI == '%HTTP_HOST%') {
+				$this->dataAPI = 'http://' . $_SERVER['HTTP_HOST'];
+			}
 		}
 		$this->dataAPI;
 	}
@@ -45,17 +48,30 @@ class Separation {
 		if (!file_exists($this->configFile)) {
 			return;
 		}
+		$this->appConfig($this->configFile);
+		return $this;
+	}
+
+	private function appConfig ($configFile) {
 		if (function_exists('yaml_parse_file')) {
-			$separation = yaml_parse_file($this->configFile);
+			$separation = yaml_parse_file($configFile);
 		} else {
-			$separation = $this->yamlSlow->parse($this->configFile);
+			$separation = $this->yamlSlow->parse($configFile);
 		}
 		if ($separation == false) {
-			throw new \Exception('Can not parse YAML file: ' . $this->configFile);
+			throw new \Exception('Can not parse YAML file: ' . $configFile);
 		}
-		$offset = 0;
-		if (!is_array($separation['binding']) || empty($separation['binding'])) {
-			$this->bindings = [];
+		if (isset($separation['imports']) && is_array($separation['imports']) && || empty($separation['imports'])) {
+			foreach ($separation['imports'] as $import) {
+				$first = substr($import, 0, 1);
+				if ($first != '/') {
+					$import = $this->['root'] . '/../app/' . $import; 
+				}
+				$this->appConfig($import);
+			}
+		}
+		$offset = count($this->bindings);
+		if (!isset($separation['binding']) || !is_array($separation['binding']) || empty($separation['binding'])) {
 			return $this;
 		}
 		foreach ($separation['binding'] as $id => $binding) {
@@ -64,7 +80,6 @@ class Separation {
 			$this->bindingsHash[$id] = $this->bindings[$offset];
 			$offset++;
 		}
-		return $this;
 	}
 
 	public function url ($id, $url) {

@@ -65,14 +65,14 @@ class Separation {
 			foreach ($separation['imports'] as $import) {
 				$first = substr($import, 0, 1);
 				if ($first != '/') {
-					$import = $this->root . '/../app/' . $import; 
+					$import = $this->root . '/../app/' . $import;
 				}
 				$this->appConfig($import);
 			}
 		}
 		$offset = count($this->bindings);
 		if (!isset($separation['binding']) || !is_array($separation['binding']) || empty($separation['binding'])) {
-			return $this;
+			return;
 		}
 		foreach ($separation['binding'] as $id => $binding) {
 			$this->bindings[$offset] = new \ArrayObject($binding);

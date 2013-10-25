@@ -65,7 +65,7 @@ class Separation {
 			foreach ($separation['imports'] as $import) {
 				$first = substr($import, 0, 1);
 				if ($first != '/') {
-					$import = $this->['root'] . '/../app/' . $import; 
+					$import = $this->root . '/../app/' . $import; 
 				}
 				$this->appConfig($import);
 			}

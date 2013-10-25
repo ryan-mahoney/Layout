@@ -61,7 +61,7 @@ class Separation {
 		if ($separation == false) {
 			throw new \Exception('Can not parse YAML file: ' . $configFile);
 		}
-		if (isset($separation['imports']) && is_array($separation['imports']) && || empty($separation['imports'])) {
+		if (isset($separation['imports']) && is_array($separation['imports']) && !empty($separation['imports'])) {
 			foreach ($separation['imports'] as $import) {
 				$first = substr($import, 0, 1);
 				if ($first != '/') {

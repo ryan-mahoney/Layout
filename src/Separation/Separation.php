@@ -22,7 +22,7 @@ class Separation {
 		$this->yamlSlow = $yamlSlow;
 		if (isset($config->db['dataAPI'])) {
 			$this->dataAPI = $config->db['dataAPI'];
-			if ($this->dataAPI == '%HTTP_HOST%') {
+			if ($this->dataAPI == '%HTTP_HOST%' && isset($_SERVER['HTTP_HOST'])) {
 				$this->dataAPI = 'http://' . $_SERVER['HTTP_HOST'];
 			}
 		}

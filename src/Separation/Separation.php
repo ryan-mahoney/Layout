@@ -34,7 +34,7 @@ class Separation {
 	}
 
 	public function app ($app) {
-		$this->app = $app;
+		$this->app = $this->root . '/../' . $app;
 		return $this;
 	}
 
@@ -44,7 +44,7 @@ class Separation {
 			throw new \Exception('Can not load html file: ' . $this->htmlFile);
 		}
 		$this->html = file_get_contents($this->htmlFile);
-		$this->configFile = $this->root . '/../app/' . (($this->app !== false) ? $this->app : $path) . '.yml';
+		$this->configFile = (($this->app !== false) ? $this->app : ($this->root . '/../app/' . $path)) . '.yml';
 		if (!file_exists($this->configFile)) {
 			return;
 		}

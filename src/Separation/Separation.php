@@ -93,7 +93,7 @@ class Separation {
 	}
 
 	public function partial ($id, $partial) {
-		$this->bindingsHash['partial'] = $partial;
+		$this->bindingsHash[$id]['partial'] = $partial;
 		return $this;
 	}
 

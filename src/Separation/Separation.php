@@ -123,7 +123,7 @@ class Separation {
 	    $pieces = explode('/', preg_replace('/.*?:\/\//', '', $url));
         $url = '';
         foreach (['domain', 'path', 'collection', 'method', 'limit', 'page', 'sort'] as $offset => $key) {
-        	if (isset($binding['args'][$key])) {
+        	if (isset($binding['args']) && isset($binding['args'][$key])) {
             	$url .= $binding['args'][$key];
             } else if (isset($pieces[$offset])) {
 				$url .= $pieces[$offset];

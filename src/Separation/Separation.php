@@ -46,7 +46,7 @@ class Separation {
 		$this->html = file_get_contents($this->htmlFile);
 		$this->configFile = (($this->app !== false) ? $this->app : ($this->root . '/../app/' . $path)) . '.yml';
 		if (!file_exists($this->configFile)) {
-			return;
+			return $this;
 		}
 		$this->appConfig($this->configFile);
 		return $this;

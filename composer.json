@@ -1,14 +1,14 @@
 {
-    "name": "virtuecenter/separation",
+    "name": "opine/separation",
     "type": "library",
-    "description": "Microframework for PHP/JS handlebar templating",
+    "description": "Service facilitating Opine's View opinion re: layouts and partials",
     "keywords": ["handlebars", "templating"],
     "license": "MIT",
     "authors": [
         {
             "name": "Ryan Mahoney",
             "email": "ryan@virtuecenter.com",
-            "homepage": "http://www.virtuecenter.com",
+            "homepage": "http://opine-php.org",
             "role": "Developer"
         }
     ],
@@ -18,6 +18,6 @@
         "symfony/yaml": "2.4.*@dev"
     },
     "autoload": {
-        "psr-0": {"Separation": "src/"}
+        "psr-4": {"Opine\\": "src/"}
     }
 }

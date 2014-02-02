@@ -1,4 +1,7 @@
-# Separation.js 
+Separation
+==========
+
+Service facilitating Opine's View opinion re: layouts and partials
 
 Learn more here:
 

@@ -1,5 +1,28 @@
 <?php
-namespace Separation;
+/**
+ * Opine\Separation
+ *
+ * Copyright (c)2013 Ryan Mahoney, https://github.com/virtuecenter <ryan@virtuecenter.com>
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+namespace Opine;
 
 class Separation {
 	private $htmlFile;
@@ -14,8 +37,9 @@ class Separation {
 	private $app = false;
 	private $dataAPI = false;
 	private $yamlSlow;
+	private $slim = false;
 
-	public function __construct($root, $engine, $cache, $config, $yamlSlow) {
+	public function __construct($root, $engine, $cache, $config, $yamlSlow, $slim=false) {
 		$this->root = $root;
 		$this->engine = $engine;
 		$this->cache = $cache;
@@ -23,10 +47,11 @@ class Separation {
 		if (isset($config->db['dataAPI'])) {
 			$this->dataAPI = $config->db['dataAPI'];
 			if ($this->dataAPI == '%HTTP_HOST%' && isset($_SERVER['HTTP_HOST'])) {
-				$this->dataAPI = 'http://' . $_SERVER['HTTP_HOST'];
+				$this->baseURL = 'http://' . $_SERVER['HTTP_HOST'];
+				$this->dataAPI = $this->baseURL;
 			}
 		}
-		$this->dataAPI;
+		$this->slim = $slim;
 	}
 
 	public function showBindings () {
@@ -75,10 +100,17 @@ class Separation {
 			return;
 		}
 		foreach ($separation['binding'] as $id => $binding) {
-			$this->bindings[$offset] = new \ArrayObject($binding);
-			$this->bindings[$offset]['id'] = $id;
-			$this->bindingsHash[$id] = $this->bindings[$offset];
-			$offset++;
+			$this->bindingAdd($id, $binding);
+		}
+	}
+
+	public function bindingAdd ($id, $binding, $data=false) {
+		$offset = count($this->bindings);
+		$this->bindings[$offset] = new \ArrayObject($binding);
+		$this->bindings[$offset]['id'] = $id;
+		$this->bindingsHash[$id] = $this->bindings[$offset];
+		if ($data !== false) {
+			$this->dataCache[$id] = $data;
 		}
 	}
 
@@ -148,6 +180,7 @@ class Separation {
 	public function template () {
 		$context = [];
 		foreach ($this->bindings as $binding) {
+			$local = false;
 			if (!isset($binding['partial']) || empty($binding['partial'])) {
 				$template = false;
 			} elseif (substr($binding['partial'], -4) == '.hbs') {
@@ -155,9 +188,15 @@ class Separation {
 			} else {
 				$template = $binding['partial'];
 			}
-			$dataUrl = $binding['url'];
+			$dataUrl = '';
+			if (isset($binding['url'])) {
+				$dataUrl = $binding['url'];
+			}
 			if ($this->dataAPI !== false && !empty($dataUrl)) {
 				if (substr_count($dataUrl, '%dataAPI%') > 0) {
+					if ($this->dataAPI == $this->baseURL) {
+						$local = true;
+					}
 					$dataUrl = str_replace('%dataAPI%', $this->dataAPI, $dataUrl);
 				}
 			}
@@ -173,6 +212,10 @@ class Separation {
 					$dataUrl = self::collectionUrl($binding, $dataUrl);
 				} elseif ($binding['type'] == 'Document') {
 					$dataUrl = self::documentUrl($binding, $dataUrl);
+				} elseif ($binding['type'] == 'Post') {
+					$this->dataCache[$binding['id']] = (isset($_POST) ? $_POST : []);
+				} elseif ($binding['type'] == 'Get') {
+					$this->dataCache[$binding['id']] = (isset($_GET) ? $_GET : []);
 				}
 			}
 			if (substr($dataUrl, 0, 1) == '@') {
@@ -184,7 +227,13 @@ class Separation {
 							return trim(file_get_contents($dataUrl));
 						}, $binding['cache']);
 					} else {
-						$data = trim(file_get_contents($dataUrl));
+//						if ($local == true && $this->slim !== false) {
+//							ob_start();
+//							$this->slimDirect($dataUrl);
+//							$data = ob_get_clean();
+//						} else {
+							$data = trim(file_get_contents($dataUrl));
+//						}
 					}
 					$this->dataCache[$binding['id']] = $data;
 				} else {
@@ -210,6 +259,8 @@ class Separation {
 		$this->html = $this->engine->render($this->html, $context);
 		return $this;
 	}
+
+	public function slimDirect ($url) {}
 
 	public function write(&$reference=false) {
 		if ($reference === false) {

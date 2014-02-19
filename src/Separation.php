@@ -39,11 +39,12 @@ class Separation {
     private $yamlSlow;
     private $slim = false;
 
-    public function __construct($root, $engine, $cache, $config, $yamlSlow, $slim=false) {
+    public function __construct($root, $engine, $cache, $config, $yamlSlow, $slim) {
         $this->root = $root;
         $this->engine = $engine;
         $this->cache = $cache;
         $this->yamlSlow = $yamlSlow;
+        $this->slim = $slim;
         if (isset($config->db['dataAPI'])) {
             $this->dataAPI = $config->db['dataAPI'];
             if ($this->dataAPI == '%HTTP_HOST%' && isset($_SERVER['HTTP_HOST'])) {
@@ -51,7 +52,6 @@ class Separation {
                 $this->dataAPI = $this->baseURL;
             }
         }
-        $this->slim = $slim;
     }
 
     public function showBindings () {
@@ -228,9 +228,7 @@ class Separation {
                         }, $binding['cache']);
                     } else {
 //                        if ($local == true && $this->slim !== false) {
-//                            ob_start();
-//                            $this->slimDirect($dataUrl);
-//                            $data = ob_get_clean();
+//                            $data = $this->slimDirect($dataUrl);
 //                        } else {
                             $data = trim(file_get_contents($dataUrl));
 //                        }
@@ -260,7 +258,20 @@ class Separation {
         return $this;
     }
 
-    public function slimDirect ($url) {}
+    public function slimDirect ($url) {
+        $url = str_replace($this->baseURL, '', $url);
+        //ob_start();
+        $slimResponse = $this->slim->reRun('GET', $url);
+        $text = ob_get_clean();
+        if ($text == '' && $slimResponse != '') {
+            $text = $slimResponse;
+        }
+        var_dump($text);
+        exit;
+        //echo $text;
+        //exit;
+        return $text;
+    }
 
     public function write(&$reference=false) {
         if ($reference === false) {

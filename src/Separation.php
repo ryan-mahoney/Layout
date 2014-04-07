@@ -27,6 +27,7 @@ namespace Opine;
 class Separation {
     private $htmlFile;
     private $html;
+    private $config;
     private $configFile;
     private $bindings = [];
     private $bindingsHash = [];
@@ -37,14 +38,16 @@ class Separation {
     private $app = false;
     private $dataAPI = false;
     private $yamlSlow;
-    private $slim = false;
+    private $route = false;
 
-    public function __construct($root, $engine, $cache, $config, $yamlSlow, $slim) {
+    public function __construct($root, $engine, $cache, $config, $yamlSlow, $route, $app=false) {
         $this->root = $root;
         $this->engine = $engine;
         $this->cache = $cache;
         $this->yamlSlow = $yamlSlow;
-        $this->slim = $slim;
+        $this->route = $route;
+        $this->app = $app;
+        $this->config = $config;
         if (isset($config->db['dataAPI'])) {
             $this->dataAPI = $config->db['dataAPI'];
             if ($this->dataAPI == '%HTTP_HOST%' && isset($_SERVER['HTTP_HOST'])) {
@@ -59,8 +62,8 @@ class Separation {
     }
 
     public function app ($app) {
-        $this->app = $this->root . '/../' . $app;
-        return $this;
+        $app = $this->root . '/../' . $app;
+        return new Separation($this->root, $this->engine, $this->cache, $this->config, $this->yamlSlow, $this->route, $app);
     }
 
     public function layout ($path) {
@@ -227,11 +230,15 @@ class Separation {
                             return trim(file_get_contents($dataUrl));
                         }, $binding['cache']);
                     } else {
-//                        if ($local == true && $this->slim !== false) {
-//                            $data = $this->slimDirect($dataUrl);
-//                        } else {
-                            $data = trim(file_get_contents($dataUrl));
-//                        }
+                        $local = false;
+                        if ($local == true) {
+                            $header = false;
+                            $dataUrl = substr($dataUrl, strpos($dataUrl, '/', 8));
+                            $data = $this->route->run('GET', $dataUrl, $header);
+                        } else {
+                            $data = file_get_contents($dataUrl);
+                        }
+                        $data = trim($data);
                     }
                     $this->dataCache[$binding['id']] = $data;
                 } else {
@@ -256,21 +263,6 @@ class Separation {
         }
         $this->html = $this->engine->render($this->html, $context);
         return $this;
-    }
-
-    public function slimDirect ($url) {
-        $url = str_replace($this->baseURL, '', $url);
-        //ob_start();
-        $slimResponse = $this->slim->reRun('GET', $url);
-        $text = ob_get_clean();
-        if ($text == '' && $slimResponse != '') {
-            $text = $slimResponse;
-        }
-        var_dump($text);
-        exit;
-        //echo $text;
-        //exit;
-        return $text;
     }
 
     public function write(&$reference=false) {

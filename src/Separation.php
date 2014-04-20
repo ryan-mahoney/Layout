@@ -37,9 +37,9 @@ class Separation {
     private $app = false;
     private $dataAPI = false;
     private $yamlSlow;
-    private $slim = false;
+    private $route = false;
 
-    public function __construct($root, $engine, $cache, $config, $yamlSlow, $slim=false) {
+    public function __construct($root, $engine, $cache, $config, $yamlSlow, $route=false) {
         $this->root = $root;
         $this->engine = $engine;
         $this->cache = $cache;
@@ -51,7 +51,7 @@ class Separation {
                 $this->dataAPI = $this->baseURL;
             }
         }
-        $this->slim = $slim;
+        $this->route = $route;
     }
 
     public function showBindings () {
@@ -227,13 +227,20 @@ class Separation {
                             return trim(file_get_contents($dataUrl));
                         }, $binding['cache']);
                     } else {
-//                        if ($local == true && $this->slim !== false) {
-//                            ob_start();
-//                            $this->slimDirect($dataUrl);
-//                            $data = ob_get_clean();
-//                        } else {
+                        if (false && $local == true && $this->route !== false) {
+                            $prefix = 'http://';
+                            if ($_SERVER['SERVER_PORT'] == 443) {
+                                $prefix = 'https://';    
+                            }
+                            $dataUrl = str_replace($prefix . $_SERVER['HTTP_HOST'], '', $dataUrl);
+                            $data = $this->route->run('GET', $dataUrl);
+
+                            var_dump($data);
+                            exit;
+
+                        } else {
                             $data = trim(file_get_contents($dataUrl));
-//                        }
+                        }
                     }
                     $this->dataCache[$binding['id']] = $data;
                 } else {
@@ -259,8 +266,6 @@ class Separation {
         $this->html = $this->engine->render($this->html, $context);
         return $this;
     }
-
-    public function slimDirect ($url) {}
 
     public function write(&$reference=false) {
         if ($reference === false) {

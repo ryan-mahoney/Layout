@@ -27,6 +27,7 @@ namespace Opine;
 class Separation {
     private $htmlFile;
     private $html;
+    private $config;
     private $configFile;
     private $bindings = [];
     private $bindingsHash = [];
@@ -39,11 +40,14 @@ class Separation {
     private $yamlSlow;
     private $route = false;
 
-    public function __construct($root, $engine, $cache, $config, $yamlSlow, $route=false) {
+    public function __construct($root, $engine, $cache, $config, $yamlSlow, $route, $app=false) {
         $this->root = $root;
         $this->engine = $engine;
         $this->cache = $cache;
         $this->yamlSlow = $yamlSlow;
+        $this->route = $route;
+        $this->app = $app;
+        $this->config = $config;
         if (isset($config->db['dataAPI'])) {
             $this->dataAPI = $config->db['dataAPI'];
             if ($this->dataAPI == '%HTTP_HOST%' && isset($_SERVER['HTTP_HOST'])) {
@@ -59,8 +63,8 @@ class Separation {
     }
 
     public function app ($app) {
-        $this->app = $this->root . '/../' . $app;
-        return $this;
+        $app = $this->root . '/../' . $app;
+        return new Separation($this->root, $this->engine, $this->cache, $this->config, $this->yamlSlow, $this->route, $app);
     }
 
     public function layout ($path) {

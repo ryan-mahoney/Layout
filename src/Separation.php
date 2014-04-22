@@ -39,6 +39,7 @@ class Separation {
     private $dataAPI = false;
     private $yamlSlow;
     private $route = false;
+    private $debug = true;
 
     public function __construct($root, $engine, $cache, $config, $yamlSlow, $route, $app=false) {
         $this->root = $root;
@@ -62,9 +63,16 @@ class Separation {
         return print_r($this->bindings, true);
     }
 
-    public function app ($app) {
-        $app = $this->root . '/../' . $app;
+    public function app ($app=false) {
+        if ($app !== false) {
+            $app = $this->root . '/../' . $app;
+        }
         return new Separation($this->root, $this->engine, $this->cache, $this->config, $this->yamlSlow, $this->route, $app);
+    }
+
+    public function debug () {
+        $this->debug = true;
+        return $this;
     }
 
     public function layout ($path) {
@@ -209,7 +217,7 @@ class Separation {
                 if (substr_count($dataUrl, '?') > 0) {
                     $delimiter = '&';
                 }
-                $dataUrl .= $delimiter . http_build_query($binding['args']);
+                $dataUrl .= $delimiter . urldecode(http_build_query($binding['args']));
             }
             if (isset($binding['type'])) {
                 if ($binding['type'] == 'Collection') {
@@ -231,17 +239,13 @@ class Separation {
                             return trim(file_get_contents($dataUrl));
                         }, $binding['cache']);
                     } else {
-                        if (false && $local == true && $this->route !== false) {
+                        if ($local == true) {
                             $prefix = 'http://';
                             if ($_SERVER['SERVER_PORT'] == 443) {
                                 $prefix = 'https://';    
                             }
-                            $dataUrl = str_replace($prefix . $_SERVER['HTTP_HOST'], '', $dataUrl);
-                            $data = $this->route->run('GET', $dataUrl);
-
-                            var_dump($data);
-                            exit;
-
+                            $dataUrl = urldecode(str_replace($prefix . $_SERVER['HTTP_HOST'], '', $dataUrl));
+                            $data = trim($this->route->run('GET', $dataUrl));
                         } else {
                             $data = trim(file_get_contents($dataUrl));
                         }
@@ -251,7 +255,6 @@ class Separation {
                     $data = $this->dataCache[$binding['id']];
                 }
             }
-            $type = 'json';
             if (isset($binding['type'])) {
                 $type = $binding['type'];
             }

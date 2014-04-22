@@ -255,6 +255,7 @@ class Separation {
                     $data = $this->dataCache[$binding['id']];
                 }
             }
+            $type = 'json';
             if (isset($binding['type'])) {
                 $type = $binding['type'];
             }

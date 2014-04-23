@@ -1,23 +1,28 @@
 {
-    "name": "opine/separation",
+    "name": "opine\/separation",
     "type": "library",
     "description": "Service facilitating Opine's View opinion re: layouts and partials",
-    "keywords": ["handlebars", "templating"],
+    "keywords": [
+        "handlebars",
+        "templating"
+    ],
     "license": "MIT",
     "authors": [
         {
             "name": "Ryan Mahoney",
             "email": "ryan@virtuecenter.com",
-            "homepage": "http://opine-php.org",
+            "homepage": "http:\/\/opine-php.org",
             "role": "Developer"
         }
     ],
     "require": {
-    	"php": ">=5.3.0",
-        "opine/handlebars.php": "dev-master",
-        "symfony/yaml": "2.4.*@dev"
+        "php": ">=5.3.0",
+        "opine\/handlebars.php": "1.0.1",
+        "symfony\/yaml": "2.4.*@dev"
     },
     "autoload": {
-        "psr-4": {"Opine\\": "src/"}
+        "psr-4": {
+            "Opine\\": "src\/"
+        }
     }
 }

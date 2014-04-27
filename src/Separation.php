@@ -124,6 +124,7 @@ class Separation {
         if ($data !== false) {
             $this->dataCache[$id] = $data;
         }
+        return $this;
     }
 
     public function url ($id, $url) {

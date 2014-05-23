@@ -81,11 +81,15 @@ class Separation {
             throw new \Exception('Can not load html file: ' . $this->htmlFile);
         }
         $this->html = file_get_contents($this->htmlFile);
-        $this->configFile = (($this->app !== false) ? $this->app : ($this->root . '/../app/' . $path)) . '.yml';
-        if (!file_exists($this->configFile)) {
-            return $this;
+        if ($this->app !== false) {
+            if (substr($this->configFile, -4) != '.yml') {
+                $this->configFile = $this->app . '.yml';
+            }
+            if (!file_exists($this->configFile)) {
+                throw new \Exception('Can not config file: ' . $this->htmlFile);
+            }
+            $this->appConfig($this->configFile);
         }
-        $this->appConfig($this->configFile);
         return $this;
     }
 

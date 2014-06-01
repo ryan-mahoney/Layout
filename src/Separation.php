@@ -65,7 +65,15 @@ class Separation {
 
     public function app ($app=false) {
         if ($app !== false) {
-            $app = $this->root . '/../' . $app;
+            if (substr_count($app, '/') > 0) {
+                if (substr($app, 0, 1) == '/') {
+                    $app = $app;
+                } else {
+                    $app = $this->root . '/../' . $app;
+                }
+            } else {
+                $app = $this->root . '/../' . $app;
+            }
         }
         return new Separation($this->root, $this->engine, $this->cache, $this->config, $this->yamlSlow, $this->route, $app);
     }
@@ -76,19 +84,27 @@ class Separation {
     }
 
     public function layout ($path) {
-        $this->htmlFile = $this->root . '/layouts/' . $path . '.html';
+        if (substr_count($path, '/') > 0) {
+            if (substr($path, 0, 1) == '/') {
+                $this->htmlFile = $path;    
+            } else {
+                $this->htmlFile = $this->root . '/../' . $path;
+            }
+        } else {
+            $this->htmlFile = $this->root . '/layouts/' . $path . '.html';
+        }
         if (!file_exists($this->htmlFile)) {
             throw new \Exception('Can not load html file: ' . $this->htmlFile);
         }
         $this->html = file_get_contents($this->htmlFile);
         if ($this->app !== false) {
-            if (substr($this->configFile, -4) != '.yml') {
-                $this->configFile = $this->app . '.yml';
+            if (substr($this->app, -4) != '.yml') {
+                $this->app .= '.yml';
             }
-            if (!file_exists($this->configFile)) {
-                throw new \Exception('Can not config file: ' . $this->htmlFile);
+            if (!file_exists($this->app)) {
+                throw new \Exception('Can not open config file: ' . $this->app);
             }
-            $this->appConfig($this->configFile);
+            $this->appConfig($this->app);
         }
         return $this;
     }

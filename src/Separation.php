@@ -277,8 +277,6 @@ class Separation {
                                 $dataUrl = urldecode(str_replace($prefix . $_SERVER['HTTP_HOST'], '', $dataUrl));
                             }
                             $data = trim($this->route->run('GET', $dataUrl));
-                            echo $data;
-                            exit;
                         } else {
                             $data = trim(file_get_contents($dataUrl));
                         }

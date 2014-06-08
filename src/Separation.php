@@ -40,6 +40,8 @@ class Separation {
     private $yamlSlow;
     private $route = false;
     private $debug = true;
+    private $baseURL = false;
+    private static $forceLocal = false;
 
     public function __construct($root, $engine, $cache, $config, $yamlSlow, $route, $app=false) {
         $this->root = $root;
@@ -57,6 +59,10 @@ class Separation {
             }
         }
         $this->route = $route;
+    }
+
+    public static function forceLocal () {
+        self::$forceLocal = true;
     }
 
     public function showBindings () {
@@ -213,7 +219,7 @@ class Separation {
     public function template () {
         $context = [];
         foreach ($this->bindings as $binding) {
-            $local = false;
+            $local = (self::$forceLocal === true) ? true : false;
             if (!isset($binding['partial']) || empty($binding['partial'])) {
                 $template = false;
             } elseif (substr($binding['partial'], -4) == '.hbs') {
@@ -232,6 +238,8 @@ class Separation {
                     }
                     $dataUrl = str_replace('%dataAPI%', $this->dataAPI, $dataUrl);
                 }
+            } else {
+                $dataUrl = str_replace('%dataAPI%', '', $dataUrl);
             }
             if (isset($binding['args']) && is_array($binding['args']) && count($binding['args']) > 0) {
                 $delimiter = '?';
@@ -262,11 +270,15 @@ class Separation {
                     } else {
                         if ($local == true) {
                             $prefix = 'http://';
-                            if ($_SERVER['SERVER_PORT'] == 443) {
-                                $prefix = 'https://';    
+                            if (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443) {
+                                $prefix = 'https://';
                             }
-                            $dataUrl = urldecode(str_replace($prefix . $_SERVER['HTTP_HOST'], '', $dataUrl));
+                            if (isset($_SERVER['HTTP_HOST'])) {
+                                $dataUrl = urldecode(str_replace($prefix . $_SERVER['HTTP_HOST'], '', $dataUrl));
+                            }
                             $data = trim($this->route->run('GET', $dataUrl));
+                            echo $data;
+                            exit;
                         } else {
                             $data = trim(file_get_contents($dataUrl));
                         }

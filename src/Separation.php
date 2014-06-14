@@ -26,6 +26,8 @@ namespace Opine;
 
 class Separation {
     private $htmlFile;
+    private $htmlFileCompiled = false;
+    private $htmlFileCompiledPath;
     private $html;
     private $config;
     private $configFile;
@@ -99,10 +101,16 @@ class Separation {
         } else {
             $this->htmlFile = $this->root . '/layouts/' . $path . '.html';
         }
-        if (!file_exists($this->htmlFile)) {
-            throw new \Exception('Can not load html file: ' . $this->htmlFile);
+        $compiledPath = $this->compiledPath($this->htmlFile);
+        if (file_exists($compiledPath)) {
+            $this->htmlFileCompiledPath = $compiledPath;
+            $this->htmlFileCompiled = true;
+        } else {
+            if (!file_exists($this->htmlFile)) {
+                throw new \Exception('Can not load html file: ' . $this->htmlFile);
+            }
+            $this->html = file_get_contents($this->htmlFile);
         }
-        $this->html = file_get_contents($this->htmlFile);
         if ($this->app !== false) {
             if (substr($this->app, -4) != '.yml') {
                 $this->app .= '.yml';
@@ -220,10 +228,17 @@ class Separation {
         $context = [];
         foreach ($this->bindings as $binding) {
             $local = (self::$forceLocal === true) ? true : false;
+            $compiled = false;
+            $compiledPath = null;
             if (!isset($binding['partial']) || empty($binding['partial'])) {
                 $template = false;
             } elseif (substr($binding['partial'], -4) == '.hbs') {
-                $template = file_get_contents($this->root . '/partials/' . $binding['partial']);
+                $compiledPath = $this->compiledPath($binding['partial']);
+                if (file_exists($compiledPath)) {
+                    $compiled == true;
+                } else {
+                    $template = file_get_contents($this->root . '/partials/' . $binding['partial']);
+                }
             } else {
                 $template = $binding['partial'];
             }
@@ -299,10 +314,20 @@ class Separation {
             if ($template === false) {
                 $context[$binding['id']] = $data;
             } else {
-                $context[$binding['id']] = $this->engine->render($template, $data);
+                if ($compiled === true) {
+                    $function = include $compiledPath;
+                    $context[$binding['id']] = $function($data);
+                } else {
+                    $context[$binding['id']] = $this->engine->render($template, $data);
+                }
             }
         }
-        $this->html = $this->engine->render($this->html, $context);
+        if ($this->htmlFileCompiled === true) {
+            $function = include $this->htmlFileCompiledPath;
+            $this->html = $function($context);
+        } else {
+            $this->html = $this->engine->render($this->html, $context);
+        }
         return $this;
     }
 
@@ -312,5 +337,9 @@ class Separation {
         } else {
             $reference = $this->html;
         }
+    }
+
+    public function compiledPath ($path) {
+        return rtrim(rtrim($path, 'html'), 'hbs') . 'php';
     }
 }

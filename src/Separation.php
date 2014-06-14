@@ -177,8 +177,7 @@ class Separation {
     }
 
     public function data ($id, $data, $type='array') {
-        $url = $this->bindingsHash[$id]['url'];
-        $this->dataCache[$url] = $data;
+        $this->dataCache[$id] = $data;
         $this->bindingsHash[$id]['type'] = $type;
         return $this;
     }

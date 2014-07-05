@@ -92,14 +92,13 @@ class Separation {
     }
 
     public function layout ($path) {
-        if (substr_count($path, '/') > 0) {
-            if (substr($path, 0, 1) == '/') {
-                $this->htmlFile = $path;    
-            } else {
-                $this->htmlFile = $this->root . '/../' . $path;
-            }
+        if (substr($path, 0, 1) == '/') {
+            $this->htmlFile = $path;
         } else {
-            $this->htmlFile = $this->root . '/layouts/' . $path . '.html';
+            $this->htmlFile = $this->root . '/layouts/' . $path;
+        }
+        if (substr($path, -5) != '.html') {
+            $this->htmlFile .= '.html';
         }
         $compiledPath = $this->compiledPath($this->htmlFile);
         if (file_exists($compiledPath)) {

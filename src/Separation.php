@@ -26,8 +26,6 @@ namespace Opine;
 
 class Separation {
     private $htmlFile;
-    private $htmlFileCompiled = false;
-    private $htmlFileCompiledPath;
     private $html;
     private $config;
     private $configFile;
@@ -38,12 +36,9 @@ class Separation {
     private $cache;
     private $dataCache = [];
     private $app = false;
-    private $dataAPI = false;
     private $yamlSlow;
     private $route = false;
     private $debug = true;
-    private $baseURL = false;
-    private static $forceLocal = false;
 
     public function __construct($root, $engine, $cache, $config, $yamlSlow, $route, $app=false) {
         $this->root = $root;
@@ -53,18 +48,7 @@ class Separation {
         $this->route = $route;
         $this->app = $app;
         $this->config = $config;
-        if (isset($config->db['dataAPI'])) {
-            $this->dataAPI = $config->db['dataAPI'];
-            if ($this->dataAPI == '%HTTP_HOST%' && isset($_SERVER['HTTP_HOST'])) {
-                $this->baseURL = 'http://' . $_SERVER['HTTP_HOST'];
-                $this->dataAPI = $this->baseURL;
-            }
-        }
         $this->route = $route;
-    }
-
-    public static function forceLocal () {
-        self::$forceLocal = true;
     }
 
     public function showBindings () {
@@ -73,15 +57,7 @@ class Separation {
 
     public function app ($app=false) {
         if ($app !== false) {
-            if (substr_count($app, '/') > 0) {
-                if (substr($app, 0, 1) == '/') {
-                    $app = $app;
-                } else {
-                    $app = $this->root . '/../' . $app;
-                }
-            } else {
-                $app = $this->root . '/../' . $app;
-            }
+            $app = $this->root . '/../' . $app;
         }
         return new Separation($this->root, $this->engine, $this->cache, $this->config, $this->yamlSlow, $this->route, $app);
     }
@@ -92,33 +68,16 @@ class Separation {
     }
 
     public function layout ($path) {
-        if (substr($path, 0, 1) == '/') {
-            $this->htmlFile = $path;
-        } else {
-            $this->htmlFile = $this->root . '/layouts/' . $path;
+        $this->htmlFile = $this->root . '/layouts/' . $path . '.html';
+        if (!file_exists($this->htmlFile)) {
+            throw new \Exception('Can not load html file: ' . $this->htmlFile);
         }
-        if (substr($path, -5) != '.html') {
-            $this->htmlFile .= '.html';
+        $this->html = file_get_contents($this->htmlFile);
+        $this->configFile = (($this->app !== false) ? $this->app : ($this->root . '/../app/' . $path)) . '.yml';
+        if (!file_exists($this->configFile)) {
+            return $this;
         }
-        $compiledPath = $this->compiledPath($this->htmlFile);
-        if (file_exists($compiledPath)) {
-            $this->htmlFileCompiledPath = $compiledPath;
-            $this->htmlFileCompiled = true;
-        } else {
-            if (!file_exists($this->htmlFile)) {
-                throw new \Exception('Can not load html file: ' . $this->htmlFile);
-            }
-            $this->html = file_get_contents($this->htmlFile);
-        }
-        if ($this->app !== false) {
-            if (substr($this->app, -4) != '.yml') {
-                $this->app .= '.yml';
-            }
-            if (!file_exists($this->app)) {
-                throw new \Exception('Can not open config file: ' . $this->app);
-            }
-            $this->appConfig($this->app);
-        }
+        $this->appConfig($this->configFile);
         return $this;
     }
 
@@ -157,7 +116,6 @@ class Separation {
         if ($data !== false) {
             $this->dataCache[$id] = $data;
         }
-        return $this;
     }
 
     public function url ($id, $url) {
@@ -176,7 +134,8 @@ class Separation {
     }
 
     public function data ($id, $data, $type='array') {
-        $this->dataCache[$id] = $data;
+        $url = $this->bindingsHash[$id]['url'];
+        $this->dataCache[$url] = $data;
         $this->bindingsHash[$id]['type'] = $type;
         return $this;
     }
@@ -209,7 +168,7 @@ class Separation {
             }
             $url .= '/';
         }
-        $url = $protocol . '://' . $url;
+        //$url = $protocol . '://' . $url;
         return substr($url, 0, -1) . $qs;
     }
 
@@ -225,18 +184,11 @@ class Separation {
     public function template () {
         $context = [];
         foreach ($this->bindings as $binding) {
-            $local = (self::$forceLocal === true) ? true : false;
-            $compiled = false;
-            $compiledPath = null;
+            $local = false;
             if (!isset($binding['partial']) || empty($binding['partial'])) {
                 $template = false;
             } elseif (substr($binding['partial'], -4) == '.hbs') {
-                $compiledPath = $this->compiledPath($binding['partial']);
-                if (file_exists($compiledPath)) {
-                    $compiled == true;
-                } else {
-                    $template = file_get_contents($this->root . '/partials/' . $binding['partial']);
-                }
+                $template = file_get_contents($this->root . '/partials/' . $binding['partial']);
             } else {
                 $template = $binding['partial'];
             }
@@ -244,15 +196,8 @@ class Separation {
             if (isset($binding['url'])) {
                 $dataUrl = $binding['url'];
             }
-            if ($this->dataAPI !== false && !empty($dataUrl)) {
-                if (substr_count($dataUrl, '%dataAPI%') > 0) {
-                    if ($this->dataAPI == $this->baseURL) {
-                        $local = true;
-                    }
-                    $dataUrl = str_replace('%dataAPI%', $this->dataAPI, $dataUrl);
-                }
-            } else {
-                $dataUrl = str_replace('%dataAPI%', '', $dataUrl);
+            if (strtolower(substr($dataUrl, 0, 4)) != 'http') {
+                $local = true;
             }
             if (isset($binding['args']) && is_array($binding['args']) && count($binding['args']) > 0) {
                 $delimiter = '?';
@@ -282,13 +227,7 @@ class Separation {
                         }, $binding['cache']);
                     } else {
                         if ($local == true) {
-                            $prefix = 'http://';
-                            if (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443) {
-                                $prefix = 'https://';
-                            }
-                            if (isset($_SERVER['HTTP_HOST'])) {
-                                $dataUrl = urldecode(str_replace($prefix . $_SERVER['HTTP_HOST'], '', $dataUrl));
-                            }
+                            $dataUrl = urldecode($dataUrl);
                             $data = trim($this->route->run('GET', $dataUrl));
                         } else {
                             $data = trim(file_get_contents($dataUrl));
@@ -312,20 +251,10 @@ class Separation {
             if ($template === false) {
                 $context[$binding['id']] = $data;
             } else {
-                if ($compiled === true) {
-                    $function = include $compiledPath;
-                    $context[$binding['id']] = $function($data);
-                } else {
-                    $context[$binding['id']] = $this->engine->render($template, $data);
-                }
+                $context[$binding['id']] = $this->engine->render($template, $data);
             }
         }
-        if ($this->htmlFileCompiled === true) {
-            $function = include $this->htmlFileCompiledPath;
-            $this->html = $function($context);
-        } else {
-            $this->html = $this->engine->render($this->html, $context);
-        }
+        $this->html = $this->engine->render($this->html, $context);
         return $this;
     }
 
@@ -335,9 +264,5 @@ class Separation {
         } else {
             $reference = $this->html;
         }
-    }
-
-    public function compiledPath ($path) {
-        return rtrim(rtrim($path, 'html'), 'hbs') . 'php';
     }
 }

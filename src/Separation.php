@@ -23,43 +23,48 @@
  * THE SOFTWARE.
  */
 namespace Opine;
+use Exception;
 
 class Separation {
-    private $htmlFile;
-    private $html;
+    private $layout;
     private $config;
-    private $configFile;
     private $bindings = [];
     private $bindingsHash = [];
     private $engine;
     private $root;
     private $cache;
     private $dataCache = [];
-    private $app = false;
+    private $appCalled = false;
     private $yamlSlow;
     private $route = false;
     private $debug = true;
 
-    public function __construct($root, $engine, $cache, $config, $yamlSlow, $route, $app=false) {
+    public function __construct($root, $engine, $cache, $config, $yamlSlow, $route, $appPath=false) {
         $this->root = $root;
         $this->engine = $engine;
         $this->cache = $cache;
         $this->yamlSlow = $yamlSlow;
         $this->route = $route;
-        $this->app = $app;
         $this->config = $config;
         $this->route = $route;
+        if ($appPath != false) {
+            $this->appConfig($appPath);
+            $this->appCalled = true;
+        }
     }
 
     public function showBindings () {
         return print_r($this->bindings, true);
     }
 
-    public function app ($app=false) {
-        if ($app !== false) {
-            $app = $this->root . '/../' . $app;
+    public function app ($path) {
+        if (substr($path, 0, 1) == '/') {
+            $appPath = $path . '.yml';
+        } else {
+            $appPath = $this->root . '/../app/' . $path . '.yml';
         }
-        return new Separation($this->root, $this->engine, $this->cache, $this->config, $this->yamlSlow, $this->route, $app);
+        $appPath = str_replace('.yml.yml', '.yml', $appPath);
+        return new Separation($this->root, $this->engine, $this->cache, $this->config, $this->yamlSlow, $this->route, $appPath);
     }
 
     public function debug () {
@@ -68,27 +73,33 @@ class Separation {
     }
 
     public function layout ($path) {
-        $this->htmlFile = $this->root . '/layouts/' . $path . '.html';
-        if (!file_exists($this->htmlFile)) {
-            throw new \Exception('Can not load html file: ' . $this->htmlFile);
+        if (substr($path, 0, 1) == '/') {
+            $layoutPath = $path . '.html';
+        } else {
+            $layoutPath = $this->root . '/layouts/' . $path . '.html';
         }
-        $this->html = file_get_contents($this->htmlFile);
-        $this->configFile = (($this->app !== false) ? $this->app : ($this->root . '/../app/' . $path)) . '.yml';
-        if (!file_exists($this->configFile)) {
-            return $this;
+        $layoutPath = str_replace('.html.html', '.html', $layoutPath);
+        if (!file_exists($layoutPath)) {
+            throw new Exception('Can not load html file: ' . $layoutPath);
         }
-        $this->appConfig($this->configFile);
+        $this->layout = $this->compiledAsset($layoutPath);
+        if ($this->layout === false) {
+            $this->layout = file_get_contents($layoutPath);
+        }
         return $this;
     }
 
     private function appConfig ($configFile) {
+        if (!file_exists($configFile)) {
+            throw new Exception('Can not load app config: ' . $configFile);
+        }
         if (function_exists('yaml_parse_file')) {
             $separation = yaml_parse_file($configFile);
         } else {
             $separation = $this->yamlSlow->parse($configFile);
         }
         if ($separation == false) {
-            throw new \Exception('Can not parse YAML file: ' . $configFile);
+            throw new Exception('Can not parse YAML file: ' . $configFile);
         }
         if (isset($separation['imports']) && is_array($separation['imports']) && !empty($separation['imports'])) {
             foreach ($separation['imports'] as $import) {
@@ -140,38 +151,6 @@ class Separation {
         return $this;
     }
 
-    private static function collectionUrl (&$binding, $url) {
-        $protocol = explode('://', $url)[0];
-        if (empty($protocol)) {
-            $protocol = 'http';
-        }
-        $qs = '';
-        if (substr_count($url, '?') > 0) {
-            $tmp = explode('?', $url);
-            $url = $tmp[0];
-               $count = count($tmp);
-               if ($count > 1) {
-                for ($i=1; $i < $count; $i++) {
-                    $qs .= '?' . $tmp[$i];
-                }
-            }
-        }
-        $pieces = explode('/', preg_replace('/.*?:\/\//', '', $url));
-        $url = '';
-        foreach (['domain', 'path', 'collection', 'method', 'limit', 'page', 'sort'] as $offset => $key) {
-            if (isset($binding['args']) && isset($binding['args'][$key])) {
-                $url .= $binding['args'][$key];
-            } else if (isset($pieces[$offset])) {
-                $url .= $pieces[$offset];
-            } else {
-                break;
-            }
-            $url .= '/';
-        }
-        //$url = $protocol . '://' . $url;
-        return substr($url, 0, -1) . $qs;
-    }
-
     private static function documentUrl (&$binding, $url) {
         if (isset($binding['args']['slug'])) {
             return str_replace(':slug', $binding['args']['slug'], $url);
@@ -182,13 +161,20 @@ class Separation {
     }
 
     public function template () {
+        if ($this->appCalled === false) {
+            throw new Exception('must call app first');
+        }
         $context = [];
         foreach ($this->bindings as $binding) {
             $local = false;
             if (!isset($binding['partial']) || empty($binding['partial'])) {
                 $template = false;
             } elseif (substr($binding['partial'], -4) == '.hbs') {
-                $template = file_get_contents($this->root . '/partials/' . $binding['partial']);
+                $partialPath = $this->root . '/partials/' . $binding['partial'];
+                $template = $this->compiledAsset($partialPath);
+                if ($template === false) {
+                    $template = file_get_contents($partialPath);
+                }
             } else {
                 $template = $binding['partial'];
             }
@@ -207,9 +193,7 @@ class Separation {
                 $dataUrl .= $delimiter . urldecode(http_build_query($binding['args']));
             }
             if (isset($binding['type'])) {
-                if ($binding['type'] == 'Collection') {
-                    $dataUrl = self::collectionUrl($binding, $dataUrl);
-                } elseif ($binding['type'] == 'Document') {
+                if ($binding['type'] == 'Document') {
                     $dataUrl = self::documentUrl($binding, $dataUrl);
                 } elseif ($binding['type'] == 'Post') {
                     $this->dataCache[$binding['id']] = (isset($_POST) ? $_POST : []);
@@ -221,18 +205,23 @@ class Separation {
                 $data = $this->dataCache[substr($dataUrl, 1)];
             } else {
                 if (!isset($this->dataCache[$binding['id']])) {
-                    if (isset($binding['cache'])) {
-                        $data = $this->cache->getSetGet('sep-data-' . $dataUrl, function () use ($dataUrl) {
-                            return trim(file_get_contents($dataUrl));
-                        }, $binding['cache']);
-                    } else {
+                    //if (isset($binding['cache'])) {
+                    //    $data = $this->cache->getSetGet('sep-data-' . $dataUrl, function () use ($dataUrl) {
+                    //        return trim(file_get_contents($dataUrl));
+                    //    }, $binding['cache']);
+                    //} else {
                         if ($local == true) {
-                            $dataUrl = urldecode($dataUrl);
-                            $data = trim($this->route->run('GET', $dataUrl));
+                            //$dataUrl = urldecode($dataUrl);
+                            //echo $dataUrl, '<br>';
+                            //continue;
+                            $data = $this->route->run('GET', $dataUrl);
+                            if ($data === false) {
+                                throw new Exception('end note failed: ' . $dataUrl);
+                            }
                         } else {
                             $data = trim(file_get_contents($dataUrl));
                         }
-                    }
+                    //}
                     $this->dataCache[$binding['id']] = $data;
                 } else {
                     $data = $this->dataCache[$binding['id']];
@@ -251,18 +240,35 @@ class Separation {
             if ($template === false) {
                 $context[$binding['id']] = $data;
             } else {
-                $context[$binding['id']] = $this->engine->render($template, $data);
+                if (is_callable($template)) {
+                    $context[$binding['id']] = $template($data);
+                } else {
+                    $context[$binding['id']] = $this->engine->render($template, $data);
+                }
             }
         }
-        $this->html = $this->engine->render($this->html, $context);
+        if (is_callable($this->layout)) {
+            $this->layout($context);
+        } else {
+            $this->layout = $this->engine->render($this->layout, $context);
+        }
         return $this;
     }
 
     public function write(&$reference=false) {
         if ($reference === false) {
-            echo $this->html;
+            echo $this->layout;
         } else {
-            $reference = $this->html;
+            $reference = $this->layout;
         }
+    }
+
+    public function compiledAsset ($path) {
+        $path = rtrim(rtrim($path, 'html'), 'hbs') . 'php';
+        if (file_exists($path)) {
+            $function = require $path;
+            return $function;
+        }
+        return false;
     }
 }

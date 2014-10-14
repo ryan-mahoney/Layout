@@ -80,11 +80,12 @@ class Separation {
         }
         $layoutPath = str_replace('.html.html', '.html', $layoutPath);
         if (!file_exists($layoutPath)) {
+            print_r($this->bindings);
             throw new Exception('Can not load html file: ' . $layoutPath);
         }
-        $this->layout = $this->compiledAsset($layoutPath);
-        if ($this->layout === false) {
-            $this->layout = file_get_contents($layoutPath);
+        $this->layoutFile = $this->compiledAsset($layoutPath);
+        if ($this->layoutFile === false) {
+            $this->layoutFile = file_get_contents($layoutPath);
         }
         return $this;
     }
@@ -110,7 +111,6 @@ class Separation {
                 $this->appConfig($import);
             }
         }
-        $offset = count($this->bindings);
         if (!isset($separation['binding']) || !is_array($separation['binding']) || empty($separation['binding'])) {
             return;
         }
@@ -216,7 +216,7 @@ class Separation {
                             //continue;
                             $data = $this->route->run('GET', $dataUrl);
                             if ($data === false) {
-                                throw new Exception('end note failed: ' . $dataUrl);
+                                throw new Exception('sub-route failed: ' . $dataUrl);
                             }
                         } else {
                             $data = trim(file_get_contents($dataUrl));
@@ -247,19 +247,20 @@ class Separation {
                 }
             }
         }
-        if (is_callable($this->layout)) {
-            $this->layout($context);
+        if (is_callable($this->layoutFile)) {
+            $function = $this->layoutFile;
+            $this->layoutFile = $function($context);
         } else {
-            $this->layout = $this->engine->render($this->layout, $context);
+            $this->layoutFile = $this->engine->render($this->layoutFile, $context);
         }
         return $this;
     }
 
     public function write(&$reference=false) {
         if ($reference === false) {
-            echo $this->layout;
+            echo $this->layoutFile;
         } else {
-            $reference = $this->layout;
+            $reference = $this->layoutFile;
         }
     }
 

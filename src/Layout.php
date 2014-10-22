@@ -28,8 +28,8 @@ use Exception;
 class Layout {
     private $layout;
     private $config;
-    private $bindings = [];
-    private $bindingsHash = [];
+    private $regions = [];
+    private $regionsHash = [];
     private $engine;
     private $root;
     private $cache;
@@ -54,14 +54,18 @@ class Layout {
     }
 
     public function showBindings () {
-        return print_r($this->bindings, true);
+        return print_r($this->regions, true);
     }
 
     public function app ($path) {
         if (substr($path, 0, 1) == '/') {
             $appPath = $path . '.yml';
         } else {
-            $appPath = $this->root . '/../app/' . $path . '.yml';
+            if (substr($path, 0, 4) == 'app/') {
+                $appPath = $this->root . '/../' . $path . '.yml';
+            } else {
+                $appPath = $this->root . '/../app/' . $path . '.yml';
+            }
         }
         $appPath = str_replace('.yml.yml', '.yml', $appPath);
         return new Layout($this->root, $this->engine, $this->cache, $this->config, $this->yamlSlow, $this->route, $appPath);
@@ -80,7 +84,7 @@ class Layout {
         }
         $layoutPath = str_replace('.html.html', '.html', $layoutPath);
         if (!file_exists($layoutPath)) {
-            print_r($this->bindings);
+            print_r($this->regions);
             throw new Exception('Can not load html file: ' . $layoutPath);
         }
         $this->layoutFile = $this->compiledAsset($layoutPath);
@@ -111,52 +115,52 @@ class Layout {
                 $this->appConfig($import);
             }
         }
-        if (!isset($layout['binding']) || !is_array($layout['binding']) || empty($layout['binding'])) {
+        if (!isset($layout['regions']) || !is_array($layout['regions']) || empty($layout['regions'])) {
             return;
         }
-        foreach ($layout['binding'] as $id => $binding) {
-            $this->bindingAdd($id, $binding);
+        foreach ($layout['regions'] as $id => $region) {
+            $this->regionAdd($id, $region);
         }
     }
 
-    public function bindingAdd ($id, $binding, $data=false) {
-        $offset = count($this->bindings);
-        $this->bindings[$offset] = new \ArrayObject($binding);
-        $this->bindings[$offset]['id'] = $id;
-        $this->bindingsHash[$id] = $this->bindings[$offset];
+    public function regionAdd ($id, $region, $data=false) {
+        $offset = count($this->regions);
+        $this->regions[$offset] = new \ArrayObject($region);
+        $this->regions[$offset]['id'] = $id;
+        $this->regionsHash[$id] = $this->regions[$offset];
         if ($data !== false) {
             $this->dataCache[$id] = $data;
         }
     }
 
     public function url ($id, $url) {
-        $this->bindingsHash[$id]['url'] = $url;
+        $this->regionsHash[$id]['url'] = $url;
         return $this;
     }
 
     public function args ($id, $args) {
-        $this->bindingsHash[$id]['args'] = $args;
+        $this->regionsHash[$id]['args'] = $args;
         return $this;
     }
 
     public function partial ($id, $partial) {
-        $this->bindingsHash[$id]['partial'] = $partial;
+        $this->regionsHash[$id]['partial'] = $partial;
         return $this;
     }
 
     public function data ($id, $data, $type='array') {
-        $url = $this->bindingsHash[$id]['url'];
+        $url = $this->regionsHash[$id]['url'];
         $this->dataCache[$url] = $data;
-        $this->bindingsHash[$id]['type'] = $type;
+        $this->regionsHash[$id]['type'] = $type;
         return $this;
     }
 
-    private static function documentUrl (&$binding, $url) {
-        if (isset($binding['args']['slug'])) {
-            return str_replace(':slug', $binding['args']['slug'], $url);
+    private static function documentUrl (&$region, $url) {
+        if (isset($region['args']['slug'])) {
+            return str_replace(':slug', $region['args']['slug'], $url);
         }
-        if (isset($binding['args']['id'])) {
-            return str_replace('/bySlug/:slug', '/byId/' . $binding['args']['id'], $url);
+        if (isset($region['args']['id'])) {
+            return str_replace('/bySlug/:slug', '/byId/' . $region['args']['id'], $url);
         }
     }
 
@@ -165,50 +169,50 @@ class Layout {
             throw new Exception('must call app first');
         }
         $context = [];
-        foreach ($this->bindings as $binding) {
+        foreach ($this->regions as $region) {
             $local = false;
-            if (!isset($binding['partial']) || empty($binding['partial'])) {
+            if (!isset($region['partial']) || empty($region['partial'])) {
                 $template = false;
-            } elseif (substr($binding['partial'], -4) == '.hbs') {
-                $partialPath = $this->root . '/partials/' . $binding['partial'];
+            } elseif (substr($region['partial'], -4) == '.hbs') {
+                $partialPath = $this->root . '/partials/' . $region['partial'];
                 $template = $this->compiledAsset($partialPath);
                 if ($template === false) {
                     $template = file_get_contents($partialPath);
                 }
             } else {
-                $template = $binding['partial'];
+                $template = $region['partial'];
             }
             $dataUrl = '';
-            if (isset($binding['url'])) {
-                $dataUrl = $binding['url'];
+            if (isset($region['url'])) {
+                $dataUrl = $region['url'];
             }
             if (strtolower(substr($dataUrl, 0, 4)) != 'http') {
                 $local = true;
             }
-            if (isset($binding['args']) && is_array($binding['args']) && count($binding['args']) > 0) {
+            if (isset($region['args']) && is_array($region['args']) && count($region['args']) > 0) {
                 $delimiter = '?';
                 if (substr_count($dataUrl, '?') > 0) {
                     $delimiter = '&';
                 }
-                $dataUrl .= $delimiter . urldecode(http_build_query($binding['args']));
+                $dataUrl .= $delimiter . urldecode(http_build_query($region['args']));
             }
-            if (isset($binding['type'])) {
-                if ($binding['type'] == 'Document') {
-                    $dataUrl = self::documentUrl($binding, $dataUrl);
-                } elseif ($binding['type'] == 'Post') {
-                    $this->dataCache[$binding['id']] = (isset($_POST) ? $_POST : []);
-                } elseif ($binding['type'] == 'Get') {
-                    $this->dataCache[$binding['id']] = (isset($_GET) ? $_GET : []);
+            if (isset($region['type'])) {
+                if ($region['type'] == 'Document') {
+                    $dataUrl = self::documentUrl($region, $dataUrl);
+                } elseif ($region['type'] == 'Post') {
+                    $this->dataCache[$region['id']] = (isset($_POST) ? $_POST : []);
+                } elseif ($region['type'] == 'Get') {
+                    $this->dataCache[$region['id']] = (isset($_GET) ? $_GET : []);
                 }
             }
             if (substr($dataUrl, 0, 1) == '@') {
                 $data = $this->dataCache[substr($dataUrl, 1)];
             } else {
-                if (!isset($this->dataCache[$binding['id']])) {
-                    //if (isset($binding['cache'])) {
+                if (!isset($this->dataCache[$region['id']])) {
+                    //if (isset($region['cache'])) {
                     //    $data = $this->cache->getSetGet('sep-data-' . $dataUrl, function () use ($dataUrl) {
                     //        return trim(file_get_contents($dataUrl));
-                    //    }, $binding['cache']);
+                    //    }, $region['cache']);
                     //} else {
                         if ($local == true) {
                             //$dataUrl = urldecode($dataUrl);
@@ -222,14 +226,14 @@ class Layout {
                             $data = trim(file_get_contents($dataUrl));
                         }
                     //}
-                    $this->dataCache[$binding['id']] = $data;
+                    $this->dataCache[$region['id']] = $data;
                 } else {
-                    $data = $this->dataCache[$binding['id']];
+                    $data = $this->dataCache[$region['id']];
                 }
             }
             $type = 'json';
-            if (isset($binding['type'])) {
-                $type = $binding['type'];
+            if (isset($region['type'])) {
+                $type = $region['type'];
             }
             if (in_array($type, ['json', 'Collection', 'Document', 'Form'])) {
                 if (!in_array(substr($data, 0, 1), ['{', ']'])) {
@@ -238,12 +242,12 @@ class Layout {
                 $data = json_decode($data, true);
             }
             if ($template === false) {
-                $context[$binding['id']] = $data;
+                $context[$region['id']] = $data;
             } else {
                 if (is_callable($template)) {
-                    $context[$binding['id']] = $template($data);
+                    $context[$region['id']] = $template($data);
                 } else {
-                    $context[$binding['id']] = $this->engine->render($template, $data);
+                    $context[$region['id']] = $this->engine->render($template, $data);
                 }
             }
         }

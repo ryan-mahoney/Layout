@@ -1,7 +1,8 @@
 <?php
 namespace Opine;
+use PHPUnit_Framework_TestCase;
 
-class SeparationTest extends \PHPUnit_Framework_TestCase {
+class LayoutTest extends PHPUnit_Framework_TestCase {
     private $db;
 
     public function setup () {

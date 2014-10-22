@@ -1,5 +1,5 @@
 {
-    "name": "opine\/separation",
+    "name": "opine\/layout",
     "type": "library",
     "description": "Service facilitating Opine's View opinion re: layouts and partials",
     "keywords": [

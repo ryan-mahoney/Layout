@@ -1,6 +1,6 @@
 <?php
 /**
- * Opine\Separation
+ * Opine\Layout
  *
  * Copyright (c)2013, 2014 Ryan Mahoney, https://github.com/Opine-Org <ryan@virtuecenter.com>
  *
@@ -25,7 +25,7 @@
 namespace Opine;
 use Exception;
 
-class Separation {
+class Layout {
     private $layout;
     private $config;
     private $bindings = [];
@@ -64,7 +64,7 @@ class Separation {
             $appPath = $this->root . '/../app/' . $path . '.yml';
         }
         $appPath = str_replace('.yml.yml', '.yml', $appPath);
-        return new Separation($this->root, $this->engine, $this->cache, $this->config, $this->yamlSlow, $this->route, $appPath);
+        return new Layout($this->root, $this->engine, $this->cache, $this->config, $this->yamlSlow, $this->route, $appPath);
     }
 
     public function debug () {
@@ -95,15 +95,15 @@ class Separation {
             throw new Exception('Can not load app config: ' . $configFile);
         }
         if (function_exists('yaml_parse_file')) {
-            $separation = yaml_parse_file($configFile);
+            $layout = yaml_parse_file($configFile);
         } else {
-            $separation = $this->yamlSlow->parse($configFile);
+            $layout = $this->yamlSlow->parse($configFile);
         }
-        if ($separation == false) {
+        if ($layout == false) {
             throw new Exception('Can not parse YAML file: ' . $configFile);
         }
-        if (isset($separation['imports']) && is_array($separation['imports']) && !empty($separation['imports'])) {
-            foreach ($separation['imports'] as $import) {
+        if (isset($layout['imports']) && is_array($layout['imports']) && !empty($layout['imports'])) {
+            foreach ($layout['imports'] as $import) {
                 $first = substr($import, 0, 1);
                 if ($first != '/') {
                     $import = $this->root . '/../app/' . $import;
@@ -111,10 +111,10 @@ class Separation {
                 $this->appConfig($import);
             }
         }
-        if (!isset($separation['binding']) || !is_array($separation['binding']) || empty($separation['binding'])) {
+        if (!isset($layout['binding']) || !is_array($layout['binding']) || empty($layout['binding'])) {
             return;
         }
-        foreach ($separation['binding'] as $id => $binding) {
+        foreach ($layout['binding'] as $id => $binding) {
             $this->bindingAdd($id, $binding);
         }
     }

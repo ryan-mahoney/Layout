@@ -164,9 +164,12 @@ class Layout {
         }
     }
 
-    public function template () {
+    public function template ($layout=false) {
         if ($this->appCalled === false) {
             throw new Exception('must call app first');
+        }
+        if ($layout !== false) {
+            $this->layout($layout);
         }
         $context = [];
         foreach ($this->regions as $region) {
@@ -269,7 +272,7 @@ class Layout {
     }
 
     public function compiledAsset ($path) {
-        $path = rtrim(rtrim($path, 'html'), 'hbs') . 'php';
+        $path = str_replace('/public/', '/cache/', $path);
         if (file_exists($path)) {
             $function = require $path;
             return $function;

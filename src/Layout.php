@@ -24,6 +24,7 @@
  */
 namespace Opine;
 use Exception;
+use Symfony\Component\Yaml\Yaml;
 
 class Layout {
     private $layout;
@@ -35,15 +36,13 @@ class Layout {
     private $cache;
     private $dataCache = [];
     private $appCalled = false;
-    private $yamlSlow;
     private $route = false;
     private $debug = true;
 
-    public function __construct($root, $engine, $cache, $config, $yamlSlow, $route, $appPath=false) {
+    public function __construct($root, $engine, $cache, $config, $route, $appPath=false) {
         $this->root = $root;
         $this->engine = $engine;
         $this->cache = $cache;
-        $this->yamlSlow = $yamlSlow;
         $this->route = $route;
         $this->config = $config;
         $this->route = $route;
@@ -68,7 +67,7 @@ class Layout {
             }
         }
         $appPath = str_replace('.yml.yml', '.yml', $appPath);
-        return new Layout($this->root, $this->engine, $this->cache, $this->config, $this->yamlSlow, $this->route, $appPath);
+        return new Layout($this->root, $this->engine, $this->cache, $this->config, $this->route, $appPath);
     }
 
     public function debug () {
@@ -101,7 +100,7 @@ class Layout {
         if (function_exists('yaml_parse_file')) {
             $layout = yaml_parse_file($configFile);
         } else {
-            $layout = $this->yamlSlow->parse($configFile);
+            $layout = Yaml::parse(file_get_contents($configFile));
         }
         if ($layout == false) {
             throw new Exception('Can not parse YAML file: ' . $configFile);

@@ -1,5 +1,5 @@
 services:
     layout:
         class:     'Opine\Layout'
-        arguments: ['%root%', '@handlebars', '@cache', '@config', '@yamlSlow', '@route']
+        arguments: ['%root%', '@handlebars', '@cache', '@config', '@route']
         scope:     'prototype'

@@ -16,8 +16,8 @@
         }
     ],
     "require": {
-        "php": ">=5.3.0",
-        "opine\/handlebars.php": "dev-master",
+        "php": ">=5.4.0",
+        "zordius\/lightncandy": "dev-master",
         "symfony\/yaml": "2.4.*@dev"
     },
     "autoload": {

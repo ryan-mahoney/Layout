@@ -249,7 +249,9 @@ class Layout {
                 if (is_callable($template)) {
                     $context[$region['id']] = $template($data);
                 } else {
-                    $context[$region['id']] = $this->engine->render($template, $data);
+                    $template = $this->engine->prepare($this->engine->compile($template));
+                    $context[$region['id']] = '<!-- not cached: ' . $region['id'] . ' -->';
+                    $context[$region['id']] .= $template($data);
                 }
             }
         }
@@ -257,7 +259,8 @@ class Layout {
             $function = $this->layoutFile;
             $this->layoutFile = $function($context);
         } else {
-            $this->layoutFile = $this->engine->render($this->layoutFile, $context);
+            $function = $this->engine->prepare($this->engine->compile($this->layoutFile));
+            $this->layoutFile = $function($context);
         }
         return $this;
     }

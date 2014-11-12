@@ -3,5 +3,5 @@ services:
         class:     '\LightnCandy'
     layout:
         class:     'Opine\Layout'
-        arguments: ['%root%', '@handlebarCache', '@cache', '@config', '@route']
+        arguments: ['%root%', '@handlebarCache', '@cache', '@route']
         scope:     'prototype'

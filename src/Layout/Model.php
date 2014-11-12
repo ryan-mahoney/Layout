@@ -2,30 +2,27 @@
 namespace Opine\Layout;
 
 class Model {
-	private $root;
-	private $layout;
-	private $bundleModel;
-	private $cache;
+    private $root;
+    private $layout;
+    private $cache;
 
-	public function __construct ($root, $layout, $bundleModel, $cache) {
-		$this->root = $root;
-		$this->layout = $layout;
-		$this->bundleModel = $bundleModel;
-		$this->cache = $cache;
-	}
+    public function __construct ($root, $layout, $cache) {
+        $this->root = $root;
+        $this->layout = $layout;
+        $this->cache = $cache;
+    }
 
-	public function build () {
-		$apps = [];
-		$apps[] = $this->root . '/../app';
-		$bundles = $this->bundleModel->bundles();
-		foreach ($bundles as $bundles) {
-			$apps[] = $this->root . '/../bundles/' . $bundle['name'] . '/app';
-		}
-	}
+    public function build () {
+        $apps = $this->folderRead($this->root . '/../app');
+    }
 
-	private function directoryScan ($path) {
-		//find all .yml files under directory
-		//convery YAML to JSON
-		//store in cache
-	}
+    private function folderRead($folder) {
+        $dir = new RecursiveDirectoryIterator($folder, FilesystemIterator::SKIP_DOTS);
+        $files = new RecursiveIteratorIterator($dir);
+        $fileList = [];
+        foreach ($files as $file) {
+            $fileList[] = $file->getPathname();
+        }
+        return $fileList;
+    }
 }

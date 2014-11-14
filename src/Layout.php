@@ -37,7 +37,7 @@ class Layout {
     private $dataCache = [];
     private $appCalled = false;
     private $route = false;
-    private $debug = true;
+    private $debug = false;
     private $appFile;
     private $layoutFile = false;
     private $layoutFileName;
@@ -191,8 +191,7 @@ class Layout {
     }
 
     public function data ($id, $data, $type='array') {
-        $url = $this->regionsHash[$id]['url'];
-        $this->dataCache[$url] = $data;
+        $this->dataCache[$id] = $data;
         $this->regionsHash[$id]['type'] = $type;
         return $this;
     }
@@ -272,6 +271,12 @@ class Layout {
                     $context[$region['id']] = $template($this->dataCache[$region['id']]);
                 }
             }
+        }
+        if ($this->debug) {
+            echo 'Context:', "\n";
+            var_dump($context);
+            echo 'Regions:', "\n";
+            var_dump($this->regions);
         }
         if (is_callable($this->layoutFile)) {
             $function = $this->layoutFile;

@@ -41,6 +41,7 @@ class Layout {
     private $appFile;
     private $layoutFile = false;
     private $layoutFileName;
+    private $context = [];
 
     public function __construct($root, $engine, $cache, $route, $appFile=false) {
         $this->root = $root;
@@ -52,6 +53,11 @@ class Layout {
             $this->appCalled = true;
             $this->appFile = $appFile;
         }
+    }
+
+    public function context ($context) {
+        $this->context = $context;
+        return $this;
     }
 
     public function showBindings () {
@@ -278,6 +284,7 @@ class Layout {
             echo 'Regions:', "\n";
             var_dump($this->regions);
         }
+        $context = array_merge($this->context, $context);
         if (is_callable($this->layoutFile)) {
             $function = $this->layoutFile;
             return $function($context);

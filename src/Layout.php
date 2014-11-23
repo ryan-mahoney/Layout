@@ -26,6 +26,7 @@ namespace Opine;
 use Exception;
 use ArrayObject;
 use Symfony\Component\Yaml\Yaml;
+use Opine\Interfaces\Cache as CacheInterface;
 
 class Layout {
     private $layout;
@@ -43,7 +44,7 @@ class Layout {
     private $layoutFileName;
     private $context = [];
 
-    public function __construct($root, $engine, $cache, $route, $appFile=false) {
+    public function __construct($root, $engine, CacheInterface $cache, $route, $appFile=false) {
         $this->root = $root;
         $this->engine = $engine;
         $this->cache = $cache;

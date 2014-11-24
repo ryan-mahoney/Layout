@@ -19,7 +19,7 @@
     "require": {
         "php": ">=5.5.0",
         "opine/interfaces": "dev-master",
-        "zordius/lightncandy": "dev-master",
+        "opine/lightncandy": "dev-master",
         "symfony/yaml": "2.4.*@dev"
     },
     "require-dev": {

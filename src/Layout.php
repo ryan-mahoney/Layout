@@ -78,10 +78,10 @@ class Layout {
         if (substr($path, 0, 1) == '/') {
             $path = $path . '.yml';
         } else {
-            if (substr($path, 0, 16) == 'configs/layouts/') {
+            if (substr($path, 0, 16) == 'config/layouts/') {
                 $path = $this->root . '/../' . $path . '.yml';
             } else {
-                $path = $this->root . '/../configs/layouts/' . $path . '.yml';
+                $path = $this->root . '/../config/layouts/' . $path . '.yml';
             }
         }
         $path = str_replace('.yml.yml', '.yml', $path);
@@ -159,7 +159,7 @@ class Layout {
             foreach ($layout['imports'] as $import) {
                 $first = substr($import, 0, 1);
                 if ($first != '/') {
-                    $import = $this->root . '/../configs/layouts/' . $import;
+                    $import = $this->root . '/../config/layouts/' . $import;
                 }
                 $this->appConfig($import);
             }

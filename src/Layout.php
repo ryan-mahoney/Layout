@@ -345,7 +345,7 @@ class Layout {
     }
 
     public function compiledAsset ($path) {
-        $path = str_replace('/public/', '/var/cache/', $path);
+        $path = str_replace('/public/', '/var/cache/public/', $path);
         if (file_exists($path)) {
             $function = require $path;
             return $function;

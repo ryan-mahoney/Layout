@@ -78,10 +78,10 @@ class Layout {
         if (substr($path, 0, 1) == '/') {
             $path = $path . '.yml';
         } else {
-            if (substr($path, 0, 4) == 'app/') {
+            if (substr($path, 0, 16) == 'configs/layouts/') {
                 $path = $this->root . '/../' . $path . '.yml';
             } else {
-                $path = $this->root . '/../app/' . $path . '.yml';
+                $path = $this->root . '/../configs/layouts/' . $path . '.yml';
             }
         }
         $path = str_replace('.yml.yml', '.yml', $path);
@@ -159,7 +159,7 @@ class Layout {
             foreach ($layout['imports'] as $import) {
                 $first = substr($import, 0, 1);
                 if ($first != '/') {
-                    $import = $this->root . '/../app/' . $import;
+                    $import = $this->root . '/../configs/layouts/' . $import;
                 }
                 $this->appConfig($import);
             }
@@ -345,7 +345,7 @@ class Layout {
     }
 
     public function compiledAsset ($path) {
-        $path = str_replace('/public/', '/cache/', $path);
+        $path = str_replace('/public/', '/var/cache/', $path);
         if (file_exists($path)) {
             $function = require $path;
             return $function;

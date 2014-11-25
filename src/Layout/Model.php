@@ -15,7 +15,7 @@ class Model {
     }
 
     public function build () {
-        $apps = $this->folderRead($this->root . '/../app');
+        $apps = $this->folderRead($this->root . '/../configs/layouts');
     }
 
     private function folderRead($folder) {

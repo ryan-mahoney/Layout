@@ -41,7 +41,7 @@ class Container implements LayoutContainerInterface {
     private $regions = [];
     private $regionsHash = [];
     private $debug = false;
-    private $containerFile = false;
+    private $containerFile;
     private $containerFileName;
     private $context = [];
     private $urlCache = [];
@@ -98,6 +98,7 @@ class Container implements LayoutContainerInterface {
     }
 
     private function config ($paths) {
+        $path = false;
         if (!is_array($paths)) {
             $paths = [$paths];
         }
@@ -144,7 +145,7 @@ class Container implements LayoutContainerInterface {
         }
         $this->containerFileName = $path;
         $this->containerFile = $this->compiledAsset($path);
-        if ($this->containerFile === false) {
+        if (empty($this->containerFile)) {
             if (!file_exists($path)) {
                 throw new LayoutContainerException('Layout container does not exist: ' . $path, 3);
             }
@@ -176,7 +177,7 @@ class Container implements LayoutContainerInterface {
             } else {
                 $layout = Yaml::parse(file_get_contents($configFile));
             }
-        } catch (Excpetion $e) {
+        } catch (Exception $e) {
             throw new LayoutContainerException('Can not parse YAML file: ' . $configFile, 5);
         }
         if ($layout == false) {
@@ -249,11 +250,11 @@ class Container implements LayoutContainerInterface {
     private function renderContainer () {
         foreach ($this->regions as $region) {
             if (!isset($region['partial']) || empty($region['partial'])) {
-                $template = false;
+                $template = '';
             } elseif (substr($region['partial'], -4) == '.hbs') {
                 $partialPath = $this->root . '/partials/' . $region['partial'];
                 $template = $this->compiledAsset($partialPath);
-                if ($template === false) {
+                if (empty($template)) {
                     if (!file_exists($partialPath)) {
                         throw new LayoutContainerException('Layout partial does not exist: ' . $partialPath, 6);
                     }
@@ -373,7 +374,7 @@ class Container implements LayoutContainerInterface {
             $function = require $path;
             return $function;
         }
-        return false;
+        return null;
     }
 }
 

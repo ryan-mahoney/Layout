@@ -172,19 +172,15 @@ class LayoutTest extends PHPUnit_Framework_TestCase {
         $this->assertTrue($caught);
     }
 
-/*
     public function testBadYamlSyntaxRoute () {
         $caught = false;
         try {
             $this->layout->config('badsyntax');
         } catch (Exception $e) {
-            echo "\n\n", 'CODE: ', $e->getCode(), "\n\n";
-            echo "\n\n", 'MESSAGE: ', $e->getMessage(), "\n\n";
             if ($e->getCode() === 5) {
                 $caught = true;
             }
         }
         $this->assertTrue($caught);
     }
-*/
 }

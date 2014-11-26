@@ -65,26 +65,30 @@ class Container implements LayoutContainerInterface {
         }
     }
 
+    private function regionTypeFromUrl ($url, Array $args) {
+        $type = 'json';
+        if (substr_count($url, '/api/form/')) {
+            $type = 'Form';
+        } elseif (substr_count($url, '/api/collection/')) {
+            $type = 'Collection';
+        }
+        if (substr_count($url, '/api/collection/') && isset($args) && (isset($args['slug']) || isset($args['id']))) {
+            $type = 'Document';
+        } elseif (substr_count($url, '/bySlug/') == 1 || substr_count($url, '/byId/') == 1) {
+            $type = 'Document';
+        }
+        return $type;
+    }
+
     public function region ($id, Array $region) {
         if (!isset($region['type'])) {
             $region['type'] = 'array';
-            if (isset($region['url'])) {
-                $region['type'] = 'json';
-                if (substr_count($region['url'], '/api/form/')) {
-                    $region['type'] = 'Form';
-                }
-                if (substr_count($region['url'], '/api/collection/')) {
-                    $region['type'] = 'Collection';
-                }
-                if (substr_count($region['url'], '/api/collection/')) {
-                    if (isset($region['args']) && (isset($region['args']['slug']) || isset($region['args']['id']))) {
-                        $region['type'] = 'Document';
-                    }
-                    if (substr_count($region['url'], '/bySlug/') == 1 || substr_count($region['url'], '/byId/') == 1) {
-                        $region['type'] = 'Document';
-                    }
-                }
-            }
+        }
+        if (!isset($region['args']) || !is_array($region['args'])) {
+            $region['args'] = [];
+        }
+        if (isset($region['url']) && $region['type'] === 'array') {
+            $region['type'] = $this->regionTypeFromUrl($region['url'], $region['args']);
         }
         if (isset($region['data'])) {
             $this->context[$id] = $region['data'];

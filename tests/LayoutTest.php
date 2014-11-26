@@ -4,6 +4,7 @@ namespace Opine;
 use PHPUnit_Framework_TestCase;
 use Opine\Container\Service as Container;
 use Opine\Config\Service as Config;
+use Exception;
 
 class LayoutTest extends PHPUnit_Framework_TestCase {
     private $layout;
@@ -26,7 +27,7 @@ class LayoutTest extends PHPUnit_Framework_TestCase {
         $this->initializeRoutes();
         $this->assertTrue('Opine\Layout\Service' === get_class($this->layout));
     }
-/*
+
     public function testMakeOneArg () {
         $this->assertTrue('<html><body><ul><li>A</li><li>B</li><li>C</li></ul></body></html>' === str_replace([' ', "\n"], '', $this->layout->make('test')));
     }
@@ -56,26 +57,134 @@ class LayoutTest extends PHPUnit_Framework_TestCase {
         $context = ['second' => 'ABC'];
         $this->assertTrue('<html><body>ABC</body></html>' === str_replace([' ', "\n"], '', $this->layout->container('test', $context)->render()));
     }
-*/
+
+    public function testContainerContextEcho () {
+        $context = ['second' => 'ABC'];
+        ob_start();
+        $this->layout->container('test', $context)->write();
+        $buffer = ob_get_clean();
+        $this->assertTrue('<html><body>ABC</body></html>' === str_replace([' ', "\n"], '', $buffer));
+    }
+
     public function testContainerRegions () {
         $region = [
             'partial' => 'test.hbs',
-            'data' => ['data' => ['value' => 'Q'], ['value' => 'R'], ['value' => 'S']]];
+            'data' => ['data' => [['value' => 'Q'], ['value' => 'R'], ['value' => 'S']]]];
 
-        var_dump($this->layout->container('test', [], true)->
-                region('first', $region)->
-                render());
-
-        exit;
         $this->assertTrue(
-            '<html><body></body></html>' === str_replace([' ', "\n"], '',
-            $this->layout->container('test', $context)->
+            '<html><body><ul><li>Q</li><li>R</li><li>S</li></ul></body></html>' === str_replace([' ', "\n"], '',
+            $this->layout->container('test')->
                 region('first', $region)->
                 render()
         ));
     }
 
     public function testContainerRegionsContext () {
+        $region = [
+            'partial' => 'test.hbs',
+            'data' => ['data' => [['value' => 'Q'], ['value' => 'R'], ['value' => 'S']]]];
 
+        $region2 = [
+            'partial' => 'test.hbs'
+        ];
+
+        $context = [
+            'third' => [
+                'data' => [['value' => 'X'], ['value' => 'Y'], ['value' => 'Z']]
+            ]
+        ];
+
+        $this->assertTrue(
+            '<html><body><ul><li>Q</li><li>R</li><li>S</li></ul><ul><li>X</li><li>Y</li><li>Z</li></ul></body></html>' === str_replace([' ', "\n"], '',
+            $this->layout->container('test', $context)->
+                region('first', $region)->
+                region('third', $region2)->
+                render()
+        ));
     }
+
+    public function testBadConfig () {
+        $caught = false;
+        try {
+            $this->layout->config('x');
+        } catch (Exception $e) {
+            if ($e->getCode() === 4) {
+                $caught = true;
+            }
+        }
+        $this->assertTrue($caught);
+    }
+
+    public function testBadContainer () {
+        $caught = false;
+        try {
+            $this->layout->container('x');
+        } catch (Exception $e) {
+            if ($e->getCode() === 3) {
+                $caught = true;
+            }
+        }
+        $this->assertTrue($caught);
+    }
+
+    public function testBadPartial () {
+        $caught = false;
+        $region = [
+            'partial' => 'x.hbs',
+            'data' => ['data' => [['value' => 'Q'], ['value' => 'R'], ['value' => 'S']]]];
+        try {
+            $this->layout->container('test')->region('first', $region)->render();
+        } catch (Exception $e) {
+            if ($e->getCode() === 6) {
+                $caught = true;
+            }
+        }
+        $this->assertTrue($caught);
+    }
+
+    public function testBadLocalRoute () {
+        $caught = false;
+        $region = [
+            'partial' => 'test.hbs',
+            'url' => '/x'];
+        try {
+            $this->layout->container('test')->region('first', $region)->render();
+        } catch (Exception $e) {
+            if ($e->getCode() === 7) {
+                $caught = true;
+            }
+        }
+        $this->assertTrue($caught);
+    }
+
+    public function testBadExternalRoute () {
+        $caught = false;
+        $region = [
+            'partial' => 'test.hbs',
+            'url' => 'http://x'];
+        try {
+            $this->layout->container('test')->region('first', $region)->render();
+        } catch (Exception $e) {
+            if ($e->getCode() === 2) {
+                $caught = true;
+            }
+        }
+        $this->assertTrue($caught);
+    }
+
+/*
+    public function testBadYamlSyntaxRoute () {
+        $caught = false;
+        try {
+            $this->layout->config('badsyntax');
+        } catch (Exception $e) {
+            echo "\n\n", 'CODE: ', $e->getCode(), "\n\n";
+            echo "\n\n", 'MESSAGE: ', $e->getMessage(), "\n\n";
+            if ($e->getCode() === 5) {
+                $caught = true;
+            }
+        }
+        $this->assertTrue($caught);
+    }
+*/
 }

@@ -44,6 +44,7 @@ class Container implements LayoutContainerInterface {
     private $containerFile = false;
     private $containerFileName;
     private $context = [];
+    private $urlCache = [];
 
     public function __construct ($config, $container, Array $context, $debug, $root, $engine, CacheInterface $cache, RouteInterface $route) {
         $this->root = $root;
@@ -65,21 +66,23 @@ class Container implements LayoutContainerInterface {
     }
 
     public function region ($id, Array $region) {
-        $region['type'] = 'array';
-        if (isset($region['url'])) {
-            $region['type'] = 'json';
-            if (substr_count($region['url'], '/api/form/')) {
-                $region['type'] = 'Form';
-            }
-            if (substr_count($region['url'], '/api/collection/')) {
-                $region['type'] = 'Collection';
-            }
-            if (substr_count($region['url'], '/api/collection/')) {
-                if (isset($region['args']) && (isset($region['args']['slug']) || isset($region['args']['id']))) {
-                    $region['type'] = 'Document';
+        if (!isset($region['type'])) {
+            $region['type'] = 'array';
+            if (isset($region['url'])) {
+                $region['type'] = 'json';
+                if (substr_count($region['url'], '/api/form/')) {
+                    $region['type'] = 'Form';
                 }
-                if (substr_count($region['url'], '/bySlug/') == 1 || substr_count($region['url'], '/byId/') == 1) {
-                    $region['type'] = 'Document';
+                if (substr_count($region['url'], '/api/collection/')) {
+                    $region['type'] = 'Collection';
+                }
+                if (substr_count($region['url'], '/api/collection/')) {
+                    if (isset($region['args']) && (isset($region['args']['slug']) || isset($region['args']['id']))) {
+                        $region['type'] = 'Document';
+                    }
+                    if (substr_count($region['url'], '/bySlug/') == 1 || substr_count($region['url'], '/byId/') == 1) {
+                        $region['type'] = 'Document';
+                    }
                 }
             }
         }
@@ -104,7 +107,7 @@ class Container implements LayoutContainerInterface {
             }
         }
         if ($path === false) {
-            throw new Exception('Can not find config file: ' . implode(', ', $paths));
+            throw new LayoutContainerException('Can not find config file: ' . implode(', ', $paths), 1);
         }
         $this->configLoad($path);
     }
@@ -137,11 +140,14 @@ class Container implements LayoutContainerInterface {
             }
         }
         if ($path === false) {
-            throw new Exception('Can not find layout file: ' . implode(', ', $paths));
+            throw new LayoutContainerException('Can not find layout file: ' . implode(', ', $paths), 2);
         }
         $this->containerFileName = $path;
         $this->containerFile = $this->compiledAsset($path);
         if ($this->containerFile === false) {
+            if (!file_exists($path)) {
+                throw new LayoutContainerException('Layout container does not exist: ' . $path, 3);
+            }
             $this->containerFile = file_get_contents($path);
         }
         return $this;
@@ -161,13 +167,20 @@ class Container implements LayoutContainerInterface {
     }
 
     private function configLoad ($configFile) {
-        if (function_exists('yaml_parse_file')) {
-            $layout = yaml_parse_file($configFile);
-        } else {
-            $layout = Yaml::parse(file_get_contents($configFile));
+        if (!file_exists($configFile)) {
+            throw new LayoutContainerException('Layout config does not exist: ' . $configFile, 4);
+        }
+        try {
+            if (function_exists('yaml_parse_file')) {
+                $layout = yaml_parse_file($configFile);
+            } else {
+                $layout = Yaml::parse(file_get_contents($configFile));
+            }
+        } catch (Excpetion $e) {
+            throw new LayoutContainerException('Can not parse YAML file: ' . $configFile, 5);
         }
         if ($layout == false) {
-            throw new Exception('Can not parse YAML file: ' . $configFile);
+            throw new LayoutContainerException('Can not parse YAML file: ' . $configFile, 5);
         }
         if (isset($layout['imports']) && is_array($layout['imports']) && !empty($layout['imports'])) {
             foreach ($layout['imports'] as $import) {
@@ -241,6 +254,9 @@ class Container implements LayoutContainerInterface {
                 $partialPath = $this->root . '/partials/' . $region['partial'];
                 $template = $this->compiledAsset($partialPath);
                 if ($template === false) {
+                    if (!file_exists($partialPath)) {
+                        throw new LayoutContainerException('Layout partial does not exist: ' . $partialPath, 6);
+                    }
                     $template = file_get_contents($partialPath);
                 }
             } else {
@@ -272,7 +288,7 @@ class Container implements LayoutContainerInterface {
                     $this->context[$region['id']] = $template($this->context[$region['id']]);
                 } else {
                     $template = $this->engine->prepare($this->engine->compile($template));
-                    $this->context[$region['id']] = $template($this->context[$region['id']]);
+                    $this->context[$region['id']] = $template((Array)$this->context[$region['id']]);
                 }
             }
         }
@@ -291,14 +307,28 @@ class Container implements LayoutContainerInterface {
     }
 
     private function dataUrlRead ($dataUrl) {
+        if (isset($this->urlCache[$dataUrl])) {
+            return $this->urlCache[$dataUrl];
+        }
         if (strtolower(substr($dataUrl, 0, 4)) != 'http') {
             $data = $this->route->run('GET', $dataUrl);
             if ($data === false) {
-                throw new Exception('Layout data url failed: ' . $dataUrl);
+                throw new LayoutContainerException('Layout local route URL failed: ' . $dataUrl, 7);
+            } elseif (is_string($data)) {
+                $data = trim($data);
+            } else {
+                throw new LayoutContainerException('Layout data return non-string: ' . $dataUrl . ': ' . gettype($data), 8);
             }
+            $this->urlCache[$dataUrl] = $data;
             return $data;
         }
-        return trim(file_get_contents($dataUrl));
+        $data = file_get_contents($dataUrl);
+        if ($data === false) {
+            throw new LayoutContainerException('External route URL failed: ' . $dataUrl, 9);
+        } else {
+            $data = trim($data);
+        }
+        return $data;
     }
 
     public function write () {
@@ -346,3 +376,5 @@ class Container implements LayoutContainerInterface {
         return false;
     }
 }
+
+class LayoutContainerException extends Exception {}

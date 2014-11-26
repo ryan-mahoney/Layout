@@ -1,6 +1,6 @@
 <?php
 /**
- * Opine\Layout
+ * Opine\Layout\Container
  *
  * Copyright (c)2013, 2014 Ryan Mahoney, https://github.com/Opine-Org <ryan@virtuecenter.com>
  *
@@ -22,59 +22,94 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-namespace Opine;
+namespace Opine\Layout;
+
 use Exception;
 use ArrayObject;
 use Symfony\Component\Yaml\Yaml;
 use Opine\Interfaces\Cache as CacheInterface;
+use Opine\Interfaces\Route as RouteInterface;
+use Opine\Interfaces\LayoutContainer as LayoutContainerInterface;
 
-class Layout {
+class Container implements LayoutContainerInterface {
+    private $root;
+    private $engine;
+    private $cache;
+    private $route;
     private $layout;
+    private $configFile;
     private $regions = [];
     private $regionsHash = [];
-    private $engine;
-    private $root;
-    private $cache;
-    private $dataCache = [];
-    private $appCalled = false;
-    private $route = false;
     private $debug = false;
-    private $appFile;
-    private $layoutFile = false;
-    private $layoutFileName;
+    private $containerFile = false;
+    private $containerFileName;
     private $context = [];
 
-    public function __construct($root, $engine, CacheInterface $cache, $route, $appFile=false) {
+    public function __construct ($config, $container, Array $context, $debug, $root, $engine, CacheInterface $cache, RouteInterface $route) {
         $this->root = $root;
         $this->engine = $engine;
         $this->cache = $cache;
         $this->route = $route;
-        if ($appFile != false) {
-            $this->appConfig($appFile);
-            $this->appCalled = true;
-            $this->appFile = $appFile;
+        if ($debug === true) {
+            $this->debug = true;
+        }
+        if (!empty($config)) {
+            $this->config($config);
+        }
+        if (!empty($container)) {
+            $this->container($container);
+        }
+        if (!empty($context)) {
+            $this->context = $context;
         }
     }
 
-    public function context ($context) {
-        $this->context = $context;
+    public function region ($id, Array $region) {
+        $region['type'] = 'array';
+        if (isset($region['url'])) {
+            $region['type'] = 'json';
+            if (substr_count($region['url'], '/api/form/')) {
+                $region['type'] = 'Form';
+            }
+            if (substr_count($region['url'], '/api/collection/')) {
+                $region['type'] = 'Collection';
+            }
+            if (substr_count($region['url'], '/api/collection/')) {
+                if (isset($region['args']) && (isset($region['args']['slug']) || isset($region['args']['id']))) {
+                    $region['type'] = 'Document';
+                }
+                if (substr_count($region['url'], '/bySlug/') == 1 || substr_count($region['url'], '/byId/') == 1) {
+                    $region['type'] = 'Document';
+                }
+            }
+        }
+        if (isset($region['data'])) {
+            $this->context[$id] = $region['data'];
+            unset($region['data']);
+        }
+        $offset = count($this->regions);
+        $this->regions[$offset] = new ArrayObject($region);
+        $this->regions[$offset]['id'] = $id;
+        $this->regionsHash[$id] = $this->regions[$offset];
         return $this;
     }
 
-    public function showBindings () {
-        return print_r($this->regions, true);
-    }
-
-    public function make ($app, $layout=false) {
-        if ($layout === false) {
-            $layout = $app;
+    private function config ($paths) {
+        if (!is_array($paths)) {
+            $paths = [$paths];
         }
-        return $this->
-            app($app)->
-            render($layout);
+        foreach ($paths as $path) {
+            if ($this->configPathDetermine($path) === true) {
+                break;
+            }
+        }
+        if ($path === false) {
+            throw new Exception('Can not find config file: ' . implode(', ', $paths));
+        }
+        $this->configLoad($path);
     }
 
-    private function appPathDetermine (&$path) {
+    private function configPathDetermine (&$path) {
         if (substr($path, 0, 1) == '/') {
             $path = $path . '.yml';
         } else {
@@ -91,28 +126,28 @@ class Layout {
         return true;
     }
 
-    public function app ($paths) {
+    public function container ($paths) {
         if (!is_array($paths)) {
             $paths = [$paths];
         }
         $path = false;
         foreach ($paths as $path) {
-            if ($this->appPathDetermine($path) === true) {
+            if ($this->containerPathDetermine($path) === true) {
                 break;
             }
         }
         if ($path === false) {
-            throw new Exception('Can not find config file: ' . implode(', ', $paths));
+            throw new Exception('Can not find layout file: ' . implode(', ', $paths));
         }
-        return new Layout($this->root, $this->engine, $this->cache, $this->route, $path);
-    }
-
-    public function debug () {
-        $this->debug = true;
+        $this->containerFileName = $path;
+        $this->containerFile = $this->compiledAsset($path);
+        if ($this->containerFile === false) {
+            $this->containerFile = file_get_contents($path);
+        }
         return $this;
     }
 
-    private function layoutPathDetermine (&$path) {
+    private function containerPathDetermine (&$path) {
         if (substr($path, 0, 1) == '/') {
             $path = $path . '.html';
         } else {
@@ -125,28 +160,7 @@ class Layout {
         return true;
     }
 
-    public function layout ($paths) {
-        if (!is_array($paths)) {
-            $paths = [$paths];
-        }
-        $path = false;
-        foreach ($paths as $path) {
-            if ($this->layoutPathDetermine($path) === true) {
-                break;
-            }
-        }
-        if ($path === false) {
-            throw new Exception('Can not find layout file: ' . implode(', ', $paths));
-        }
-        $this->layoutFileName = $path;
-        $this->layoutFile = $this->compiledAsset($path);
-        if ($this->layoutFile === false) {
-            $this->layoutFile = file_get_contents($path);
-        }
-        return $this;
-    }
-
-    private function appConfig ($configFile) {
+    private function configLoad ($configFile) {
         if (function_exists('yaml_parse_file')) {
             $layout = yaml_parse_file($configFile);
         } else {
@@ -161,24 +175,14 @@ class Layout {
                 if ($first != '/') {
                     $import = $this->root . '/../config/layouts/' . $import;
                 }
-                $this->appConfig($import);
+                $this->configLoad($import);
             }
         }
         if (!isset($layout['regions']) || !is_array($layout['regions']) || empty($layout['regions'])) {
             return;
         }
         foreach ($layout['regions'] as $id => $region) {
-            $this->regionAdd($id, $region);
-        }
-    }
-
-    public function regionAdd ($id, $region, $data=false) {
-        $offset = count($this->regions);
-        $this->regions[$offset] = new ArrayObject($region);
-        $this->regions[$offset]['id'] = $id;
-        $this->regionsHash[$id] = $this->regions[$offset];
-        if ($data !== false) {
-            $this->dataCache[$id] = $data;
+            $this->region($id, $region);
         }
     }
 
@@ -187,7 +191,7 @@ class Layout {
         return $this;
     }
 
-    public function args ($id, $args) {
+    public function args ($id, Array $args) {
         $this->regionsHash[$id]['args'] = $args;
         return $this;
     }
@@ -198,7 +202,7 @@ class Layout {
     }
 
     public function data ($id, $data, $type='array') {
-        $this->dataCache[$id] = $data;
+        $this->context[$id] = $data;
         $this->regionsHash[$id]['type'] = $type;
         return $this;
     }
@@ -226,10 +230,10 @@ class Layout {
         if (isset($region['type']) && $region['type'] == 'Document') {
             $this->documentUrl($region);
         }
+        return $this;
     }
 
-    private function renderRegions () {
-        $context = [];
+    private function renderContainer () {
         foreach ($this->regions as $region) {
             if (!isset($region['partial']) || empty($region['partial'])) {
                 $template = false;
@@ -242,20 +246,13 @@ class Layout {
             } else {
                 $template = $region['partial'];
             }
-            if (isset($region['type'])) {
-                if ($region['type'] == 'Post') {
-                    $this->dataCache[$region['id']] = (isset($_POST) ? $_POST : []);
-                } elseif ($region['type'] == 'Get') {
-                    $this->dataCache[$region['id']] = (isset($_GET) ? $_GET : []);
-                }
-            }
-            if (!isset($this->dataCache[$region['id']])) {
+            if (!isset($this->context[$region['id']])) {
                 if (isset($region['cache'])) {
-                    $this->dataCache[$region['id']] = $this->cache->getSetGet($this->root . '-region-' . $region['url'], function () use ($region) {
+                    $this->context[$region['id']] = $this->cache->getSetGet($this->root . '-region-' . $region['url'], function () use ($region) {
                         return $this->dataUrlRead($region['url']);
                     }, $region['cache']);
                 } else {
-                    $this->dataCache[$region['id']] = $this->dataUrlRead($region['url']);
+                    $this->context[$region['id']] = $this->dataUrlRead($region['url']);
                 }
             }
             $type = 'json';
@@ -263,35 +260,34 @@ class Layout {
                 $type = $region['type'];
             }
             if (in_array($type, ['json', 'Collection', 'Document', 'Form'])) {
-                if (!in_array(substr($this->dataCache[$region['id']], 0, 1), ['{', ']'])) {
-                    $this->dataCache[$region['id']] = substr($this->dataCache[$region['id']], (strpos($this->dataCache[$region['id']], '(') + 1), -1);
+                if (!in_array(substr($this->context[$region['id']], 0, 1), ['{', ']'])) {
+                    $this->context[$region['id']] = substr($this->context[$region['id']], (strpos($this->context[$region['id']], '(') + 1), -1);
                 }
-                $this->dataCache[$region['id']] = json_decode($this->dataCache[$region['id']], true);
+                $this->context[$region['id']] = json_decode($this->context[$region['id']], true);
             }
             if ($template === false) {
-                $context[$region['id']] = $this->dataCache[$region['id']];
+                $this->context[$region['id']] = $this->context[$region['id']];
             } else {
                 if (is_callable($template)) {
-                    $context[$region['id']] = $template($this->dataCache[$region['id']]);
+                    $this->context[$region['id']] = $template($this->context[$region['id']]);
                 } else {
                     $template = $this->engine->prepare($this->engine->compile($template));
-                    $context[$region['id']] = $template($this->dataCache[$region['id']]);
+                    $this->context[$region['id']] = $template($this->context[$region['id']]);
                 }
             }
         }
         if ($this->debug) {
             echo 'Context:', "\n";
-            var_dump($context);
+            var_dump($this->context);
             echo 'Regions:', "\n";
             var_dump($this->regions);
         }
-        $context = array_merge($this->context, $context);
-        if (is_callable($this->layoutFile)) {
-            $function = $this->layoutFile;
-            return $function($context);
+        if (is_callable($this->containerFile)) {
+            $function = $this->containerFile;
+            return $function($this->context);
         }
-        $function = $this->engine->prepare($this->engine->compile($this->layoutFile));
-        return $function($context);
+        $function = $this->engine->prepare($this->engine->compile($this->containerFile));
+        return $function($this->context);
     }
 
     private function dataUrlRead ($dataUrl) {
@@ -305,17 +301,11 @@ class Layout {
         return trim(file_get_contents($dataUrl));
     }
 
-    public function write($layout=false) {
-        $this->render($layout, 'echo');
+    public function write () {
+        $this->render('echo');
     }
 
-    public function render ($layout=false, $mode='return') {
-        if ($this->appCalled === false) {
-            throw new Exception('Layout can not render: must call app first');
-        }
-        if ($layout !== false) {
-            $this->layout($layout);
-        }
+    public function render ($mode='return') {
         $fullCache = true;
         $key = '';
         $ttl = -1;
@@ -330,12 +320,15 @@ class Layout {
             }
             $key .= $region['url'];
         }
+        if (count($this->regions) == 0 && count($this->context) > 0) {
+            $fullCache = false;
+        }
         if ($fullCache === false || $ttl === -1) {
-            $this->output = $this->renderRegions();
+            $this->output = $this->renderContainer();
         } else {
-            $key = $this->root . '-layout-' . md5($this->appFile . '-' . $this->layoutFileName . '-' . $key);
+            $key = $this->root . '-layout-' . md5($this->configFile . '-' . $this->containerFileName . '-' . $key);
             $this->output = $this->cache->getSetGet($key, function () {
-                return $this->renderRegions();
+                return $this->renderContainer();
             }, $ttl);
         }
         if ($mode == 'return') {
@@ -344,7 +337,7 @@ class Layout {
         echo $this->output;
     }
 
-    public function compiledAsset ($path) {
+    private function compiledAsset ($path) {
         $path = str_replace('/public/', '/var/cache/public/', $path);
         if (file_exists($path)) {
             $function = require $path;

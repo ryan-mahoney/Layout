@@ -1,0 +1,5 @@
+regions:
+    first:
+        url: /test
+        args: []
+        partial: test.hbs

@@ -2,6 +2,5 @@ services:
     handlebarCache:
         class:     '\LightnCandy'
     layout:
-        class:     'Opine\Layout'
+        class:     'Opine\Layout\Service'
         arguments: ['%root%', '@handlebarCache', '@cache', '@route']
-        scope:     'prototype'

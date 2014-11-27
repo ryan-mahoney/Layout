@@ -134,7 +134,10 @@ class Container implements LayoutContainerInterface {
         return true;
     }
 
-    public function container ($paths) {
+    public function container ($paths, Array $context=[]) {
+        if (!empty($context)) {
+            $this->context = array_merge($this->context, $context);
+        }
         if (!is_array($paths)) {
             $paths = [$paths];
         }

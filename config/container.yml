@@ -1,9 +1,9 @@
 imports:
-    - config/package-container.yml
-    - vendor/opine/cache/config/package-container.yml
-    - vendor/opine/config/config/package-container.yml
-    - vendor/opine/route/config/package-container.yml
-    - vendor/opine/container/config/package-container.yml
+    - package-container.yml
+    - ../../cache/config/package-container.yml
+    - ../../config/config/package-container.yml
+    - ../../route/config/package-container.yml
+    - ../../container/config/package-container.yml
 
 services:
     controller:

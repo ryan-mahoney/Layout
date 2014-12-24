@@ -21,8 +21,8 @@
         "opine/interfaces" : "1.0.0",
         "opine/lightncandy": "dev-master",
         "symfony/yaml"     : "2.6.1",
-        "opine/route"      : "3.0.1",
-        "opine/container"  : "2.0.2",
+        "opine/route"      : "3.0.2",
+        "opine/container"  : "2.0.3",
         "opine/config"     : "3.0.0"
     },
     "require-dev": {
@@ -32,5 +32,6 @@
         "psr-4": {
             "Opine\\Layout\\": "src/"
         }
-    }
+    },
+    "version": "2.0.0"
 }

@@ -14,7 +14,7 @@ class LayoutTest extends PHPUnit_Framework_TestCase {
         $root = __DIR__ . '/../public';
         $config = new Config($root);
         $config->cacheSet();
-        $container = Container::instance($root, $config, $root . '/../config/container.yml');
+        $container = Container::instance($root, $config, $root . '/../config/containers/test-container.yml');
         $this->layout = $container->get('layout');
         $this->route = $container->get('route');
     }

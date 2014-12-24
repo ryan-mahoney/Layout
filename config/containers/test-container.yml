@@ -1,0 +1,10 @@
+imports:
+    - package-container.yml
+    - ../../vendor/opine/cache/config/containers/package-container.yml
+    - ../../vendor/opine/config/config/containers/package-container.yml
+    - ../../vendor/opine/route/config/containers/package-container.yml
+    - ../../vendor/opine/container/config/containers/package-container.yml
+
+services:
+    controller:
+        class: Controller

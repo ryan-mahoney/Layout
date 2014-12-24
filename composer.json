@@ -18,7 +18,7 @@
     ],
     "require": {
         "php"              : ">=5.5.0",
-        "opine/interfaces" : "dev-master",
+        "opine/interfaces" : "1.0.0",
         "opine/lightncandy": "dev-master",
         "symfony/yaml"     : "2.6.1",
         "opine/route"      : "3.0.1",

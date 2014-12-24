@@ -22,7 +22,7 @@
         "opine/lightncandy": "dev-master",
         "symfony/yaml"     : "2.6.1",
         "opine/route"      : "3.0.1",
-        "opine/container"  : "dev-master",
+        "opine/container"  : "2.0.2",
         "opine/config"     : "3.0.0"
     },
     "require-dev": {

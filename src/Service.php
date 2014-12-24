@@ -27,38 +27,44 @@ namespace Opine\Layout;
 use Opine\Interfaces\Cache as CacheInterface;
 use Opine\Interfaces\Route as RouteInterface;
 use Opine\Interfaces\Layout as LayoutInterface;
-use Opine\Layout\Container as Container;
 
-class Service implements LayoutInterface {
+class Service implements LayoutInterface
+{
     private $root;
     private $engine;
     private $cache;
     private $route;
 
-    public function __construct($root, $engine, CacheInterface $cache, RouteInterface $route) {
+    public function __construct($root, $engine, CacheInterface $cache, RouteInterface $route)
+    {
         $this->root = $root;
         $this->engine = $engine;
         $this->cache = $cache;
         $this->route = $route;
     }
 
-    public function make ($config, $container='', Array $context=[], $debug=false) {
+    public function make($config, $container = '', Array $context = [], $debug = false)
+    {
         if (empty($container)) {
             $container = $config;
         }
+
         return $this->instance($config, $container, $context, $debug)->
             render();
     }
 
-    public function config ($paths, Array $context=[], $debug=false) {
+    public function config($paths, Array $context = [], $debug = false)
+    {
         return $this->instance($paths, $paths, $context, $debug);
     }
 
-    public function container ($paths, Array $context=[], $debug=false) {
+    public function container($paths, Array $context = [], $debug = false)
+    {
         return $this->instance('', $paths, $context, $debug);
     }
 
-    private function instance ($config='', $container='', Array $context, $debug) {
+    private function instance($config = '', $container = '', Array $context, $debug)
+    {
         return new Container($config, $container, $context, $debug, $this->root, $this->engine, $this->cache, $this->route);
     }
 }

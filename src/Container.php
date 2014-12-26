@@ -193,11 +193,7 @@ class Container implements LayoutContainerInterface
             throw new LayoutContainerException('Layout config does not exist: '.$configFile, 4);
         }
         try {
-            if (function_exists('yaml_parse_file')) {
-                $layout = yaml_parse_file($configFile);
-            } else {
-                $layout = Yaml::parse(file_get_contents($configFile));
-            }
+            $layout = Yaml::parse(file_get_contents($configFile));
         } catch (Exception $e) {
             throw new LayoutContainerException('Can not parse YAML file: '.$configFile, 5);
         }

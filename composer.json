@@ -20,7 +20,7 @@
         "opine/interfaces" : "1.0.1",
         "opine/lightncandy": "1.0.0",
         "symfony/yaml"     : "2.6.1",
-        "opine/route"      : "3.0.3",
+        "opine/route"      : "3.0.4",
         "opine/container"  : "2.0.5",
         "opine/config"     : "3.0.2"
     },
